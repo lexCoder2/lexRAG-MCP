@@ -90,6 +90,28 @@ export class GraphBuilder {
     return `${this.projectId}:${rawId}`;
   }
 
+  /**
+   * Compute a SCIP-style symbol descriptor for a node.
+   * Format follows the SCIP spec descriptor syntax:
+   *   File     → "{relPath}"
+   *   Function → "{relPath}::{name}()"
+   *   Method   → "{relPath}::{ClassName}#{name}()"
+   *   Class    → "{relPath}::{name}#"
+   */
+  private toScipId(
+    kind: "file" | "function" | "class",
+    relPath: string,
+    name?: string,
+    scopePath?: string,
+  ): string {
+    const clean = relPath.replace(/\\/g, "/");
+    if (kind === "file") return clean;
+    if (kind === "class") return `${clean}::${name}#`;
+    // function / method
+    if (scopePath) return `${clean}::${scopePath}#${name}()`;
+    return `${clean}::${name}()`;
+  }
+
   private fileNodeId(parsedFile: ParsedFile): string {
     const relativePath =
       parsedFile.relativePath ||
@@ -159,6 +181,7 @@ export class GraphBuilder {
           f.summary = $summary,
             f.hash = $hash,
             f.relativePath = $relativePath,
+            f.scipId = $scipId,
             f.projectId = $projectId,
           f.validFrom = $validFrom,
           f.validTo = $validTo,
@@ -175,6 +198,7 @@ export class GraphBuilder {
         summary: parsedFile.summary || null,
         hash: parsedFile.hash || "",
         relativePath: relativePath,
+        scipId: this.toScipId("file", relativePath),
         projectId: this.projectId,
         validFrom: this.txTimestamp,
         validTo: null,
@@ -262,6 +286,7 @@ export class GraphBuilder {
             func.LOC = $LOC,
           func.summary = $summary,
             func.parameters = $parameters,
+            func.scipId = $scipId,
           func.validFrom = $validFrom,
           func.validTo = $validTo,
           func.createdAt = $createdAt,
@@ -278,6 +303,12 @@ export class GraphBuilder {
         summary: fn.summary || null,
         // Memgraph only supports lists of primitives as properties; serialize objects to JSON string
         parameters: JSON.stringify(fn.parameters),
+        scipId: this.toScipId(
+          "function",
+          parsedFile.relativePath || "",
+          fn.name,
+          (fn as any).scopePath,
+        ),
         validFrom: this.txTimestamp,
         validTo: null,
         createdAt: this.txTimestamp,
@@ -325,6 +356,7 @@ export class GraphBuilder {
             cls.endLine = $endLine,
             cls.LOC = $LOC,
           cls.summary = $summary,
+            cls.scipId = $scipId,
           cls.validFrom = $validFrom,
           cls.validTo = $validTo,
           cls.createdAt = $createdAt,
@@ -339,6 +371,11 @@ export class GraphBuilder {
         endLine: cls.endLine || cls.line,
         LOC: cls.LOC || 1,
         summary: cls.summary || null,
+        scipId: this.toScipId(
+          "class",
+          parsedFile.relativePath || "",
+          cls.name,
+        ),
         validFrom: this.txTimestamp,
         validTo: null,
         createdAt: this.txTimestamp,
