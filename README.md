@@ -172,6 +172,17 @@ Current branch includes delivered slices for:
 - Indexing-time symbol summarization
 - Optional Memgraph `text_search` BM25 path with safe fallback
 
+## Release highlights
+
+Recent delivery milestones and user-facing impact:
+
+- **Hybrid natural retrieval**: natural `graph_query` now uses vector + lexical + graph fusion, improving relevance for cross-file questions.
+- **Lower-token answers**: indexing-time symbol summaries reduce payload size in compact workflows while keeping responses actionable.
+- **Temporal analysis**: `asOf` and `diff_since` support historical reasoning and change auditing across graph state.
+- **Always-fresh graph**: file watcher + changed-files incremental rebuilds reduce manual refresh loops and keep MCP answers current.
+- **Broader language path**: parser registry and multi-language scaffolding prepare the same workflow for Python/Go/Rust/Java repositories.
+- **Safer retrieval fallback**: optional Memgraph BM25 `text_search` is used when available, with automatic lexical fallback to avoid runtime breaks.
+
 ## Benchmarks and quality gates
 
 Benchmark and regression scripts are included under `scripts/` and `benchmarks/` to track:
