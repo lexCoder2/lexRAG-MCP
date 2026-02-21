@@ -611,6 +611,7 @@ This is the single biggest lever for hitting the Phase 1 target of `_tokenEstima
 - ✅ Registered `diff_since` in both MCP surfaces (`src/server.ts`, `src/mcp-server.ts`) and response shaping (`src/response/schemas.ts`).
 - ✅ Added `graph_query.asOf` support for `language: 'cypher'` via temporal predicate rewrite on MATCH clauses.
 - ✅ Phase 2 acceptance criteria complete.
+- ✅ **SCIP-style `scipId` field** (2026-02-22): Added additive `scipId` property to FILE/FUNCTION/CLASS nodes in `src/graph/builder.ts`. Format: `file='relPath'`, `class='relPath::Name#'`, `func='relPath::name()'`, `method='relPath::Class#method()'`. Field coexists with existing `id` — no breaking change to existing queries.
 
 #### 2.1 Temporal schema extension
 
@@ -1188,6 +1189,7 @@ This endpoint was already added in the cleanup phase. Phase 4 extends the `capab
 - ✅ Added `context_pack` tool schemas to both MCP surfaces (`src/server.ts`, `src/mcp-server.ts`) and response-priority schema (`src/response/schemas.ts`).
 - ✅ **Production hardening**: `ProgressEngine` constructor in `tool-handlers.ts` now receives `this.context.memgraph` (was always accepted but never passed — Memgraph writes were silently dead code).
 - ✅ `createFeature()` and `createTask()` are now `async` and issue a `MERGE` to Memgraph when connected, ensuring feature/task state survives server restarts.
+- ✅ **MAGE-native PPR** (2026-02-22): `runPPR()` now tries `CALL pagerank.get()` (Memgraph MAGE module) + Cypher 3-hop seed expansion first; falls back to JS power-iteration when MAGE unavailable. `PPRResult.pprMode` field (`"mage_pagerank"` | `"js_ppr"`) indicates active path.
 
 #### 5.1 New router module: `src/graph/ppr.ts`
 
@@ -1454,6 +1456,7 @@ When `semantic_slice` is called from within the `context_pack` pipeline (Phase 5
 - ✅ Added `graph_query.mode` support (`local`, `global`, `hybrid`) and global-mode retrieval from COMMUNITY summaries in `src/tools/tool-handlers.ts`.
 - ✅ Added `graph_query.mode` schema support on both MCP surfaces (`src/server.ts`, `src/mcp-server.ts`).
 - ✅ Community labels are auto-derived from dominant path segments with fallback to `misc`, and summaries are heuristic when no external summarizer is configured.
+- ✅ **MAGE-native Leiden** (2026-02-22): `CommunityDetector.run()` now calls `CALL community_detection.get()` (real Leiden algorithm via MAGE) first; falls back to directory-heuristic grouping when MAGE unavailable. `CommunityRunResult.mode` field (`"mage_leiden"` | `"directory_heuristic"`) indicates which path ran. Docker image updated to `memgraph/memgraph-mage:latest`.
 
 #### 7.1 Leiden community detection — when it runs
 
@@ -1814,7 +1817,7 @@ The current `src/parsers/typescript-parser.ts` uses regex patterns. Migration is
 - ✅ Added multi-language parser scaffolds in `src/parsers/regex-language-parsers.ts` for Python (`.py`), Go (`.go`), Rust (`.rs`), and Java (`.java`).
 - ✅ Integrated multi-language file discovery and parser registry into `src/graph/orchestrator.ts` while keeping TypeScript parsing on the existing parser path.
 - ✅ Added non-breaking fallback behavior: unknown extensions (or missing parser matches) still index FILE-level nodes.
-- ℹ️ This slice introduces parser abstraction and baseline language support; Tree-sitter migration and richer cross-language symbol extraction remain follow-up work.
+- ✅ **Tree-sitter AST parsers** (2026-02-22): Added `src/parsers/tree-sitter-parser.ts` with native tree-sitter parsers for Python, Go, Rust, and Java using ESM→CJS bridge (`createRequire`). Added `tree-sitter` + language grammars as `optionalDependencies` in `package.json` — native bindings compile automatically in Docker (node:24-alpine + python3/make/g++) and gracefully skip in environments without build tools. `orchestrator.ts` registers AST-accurate tree-sitter parsers preferentially and logs which languages use AST vs regex fallback at startup.
 
 ---
 
