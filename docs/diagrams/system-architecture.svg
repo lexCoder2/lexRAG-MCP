@@ -87,24 +87,32 @@
   <text x="1295" y="684" text-anchor="middle" class="small">Qdrant-compatible</text>
 
   <!-- arrows -->
-  <line x1="320" y1="375" x2="390" y2="375" stroke="#334155" stroke-width="3" marker-end="url(#arrow)"/>
-  <line x1="650" y1="350" x2="730" y2="270" stroke="#334155" stroke-width="3" marker-end="url(#arrow)"/>
-  <line x1="650" y1="400" x2="730" y2="440" stroke="#334155" stroke-width="3" marker-end="url(#arrow)"/>
+  <!-- Client -> MCP Server -->
+  <path d="M320 375 H390" stroke="#334155" stroke-width="3" fill="none" marker-end="url(#arrow)"/>
 
-  <line x1="990" y1="270" x2="1060" y2="270" stroke="#334155" stroke-width="3" marker-end="url(#arrow)"/>
-  <line x1="990" y1="440" x2="1060" y2="440" stroke="#334155" stroke-width="3" marker-end="url(#arrow)"/>
+  <!-- MCP Server -> Tool Handlers -->
+  <path d="M650 355 H690 V270 H730" stroke="#334155" stroke-width="3" fill="none" marker-end="url(#arrow)"/>
 
-  <line x1="860" y1="500" x2="860" y2="555" stroke="#334155" stroke-width="3" marker-end="url(#arrow)"/>
-  <line x1="860" y1="555" x2="1095" y2="555" stroke="#334155" stroke-width="3"/>
-  <line x1="1095" y1="555" x2="1095" y2="610" stroke="#334155" stroke-width="3" marker-end="url(#arrow)"/>
+  <!-- MCP Server -> Response Shaper -->
+  <path d="M650 395 H730" stroke="#334155" stroke-width="3" fill="none" marker-end="url(#arrow)"/>
 
-  <line x1="1190" y1="500" x2="1190" y2="555" stroke="#334155" stroke-width="3" marker-end="url(#arrow)"/>
-  <line x1="1190" y1="555" x2="1295" y2="555" stroke="#334155" stroke-width="3"/>
-  <line x1="1295" y1="555" x2="1295" y2="610" stroke="#334155" stroke-width="3" marker-end="url(#arrow)"/>
+  <!-- Tool Handlers -> Graph Orchestrator -->
+  <path d="M990 270 H1060" stroke="#334155" stroke-width="3" fill="none" marker-end="url(#arrow)"/>
 
-  <line x1="730" y1="440" x2="650" y2="420" stroke="#334155" stroke-width="3" marker-end="url(#arrow)"/>
-  <line x1="650" y1="420" x2="650" y2="375" stroke="#334155" stroke-width="3"/>
-  <line x1="650" y1="375" x2="320" y2="375" stroke="#334155" stroke-width="3" marker-end="url(#arrow)"/>
+  <!-- Tool Handlers -> Hybrid Retriever -->
+  <path d="M990 300 H1025 V440 H1060" stroke="#334155" stroke-width="3" fill="none" marker-end="url(#arrow)"/>
+
+  <!-- Graph Orchestrator -> Memgraph -->
+  <path d="M1190 330 V560 H1095 V610" stroke="#334155" stroke-width="3" fill="none" marker-end="url(#arrow)"/>
+
+  <!-- Hybrid Retriever -> Vector Store -->
+  <path d="M1190 500 V555 H1295 V610" stroke="#334155" stroke-width="3" fill="none" marker-end="url(#arrow)"/>
+
+  <!-- Hybrid Retriever -> Memgraph -->
+  <path d="M1130 500 V555 H1095 V610" stroke="#334155" stroke-width="3" fill="none" marker-end="url(#arrow)"/>
+
+  <!-- Response Shaper -> Client (return path) -->
+  <path d="M730 440 H690 V375 H320" stroke="#334155" stroke-width="3" fill="none" marker-end="url(#arrow)"/>
 
   <rect x="60" y="790" width="1280" height="42" rx="12" fill="#E2E8F0"/>
   <text x="700" y="816" text-anchor="middle" class="sub">Natural queries are fused via Hybrid Retriever; responses are shaped by profile budget before returning to the client.</text>
