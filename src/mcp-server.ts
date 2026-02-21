@@ -50,8 +50,7 @@ const TOOLS: Tool[] = [
         },
         asOf: {
           type: "string",
-          description:
-            "Optional ISO timestamp or epoch ms for temporal query mode (natural language only)",
+          description: "Optional ISO timestamp or epoch ms for temporal query mode",
         },
       },
       required: ["query"],

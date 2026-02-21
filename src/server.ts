@@ -90,9 +90,7 @@ function createMcpServerInstance(): McpServer {
         asOf: z
           .string()
           .optional()
-          .describe(
-            "Optional ISO timestamp or epoch ms for temporal query mode (natural only)",
-          ),
+          .describe("Optional ISO timestamp or epoch ms for temporal query mode"),
       }),
     },
     async (args: any) => {

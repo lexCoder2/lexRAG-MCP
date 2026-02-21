@@ -661,6 +661,69 @@ export class ToolHandlers {
     );
   }
 
+  private buildTemporalPredicateForVars(variables: string[]): string {
+    const unique = [...new Set(variables.filter(Boolean))];
+    return unique
+      .map(
+        (name) =>
+          `(${name}.validFrom <= $asOfTs AND (${name}.validTo IS NULL OR ${name}.validTo > $asOfTs))`,
+      )
+      .join(" AND ");
+  }
+
+  private extractMatchVariables(segment: string): string[] {
+    const vars: string[] = [];
+    const regex = /\(([A-Za-z_][A-Za-z0-9_]*)\s*(?::|\)|\{)/g;
+    let match: RegExpExecArray | null;
+    while ((match = regex.exec(segment)) !== null) {
+      vars.push(match[1]);
+    }
+    return vars;
+  }
+
+  private applyTemporalFilterToCypher(query: string): string {
+    const matchSegmentRegex =
+      /((?:OPTIONAL\s+MATCH|MATCH)\b[\s\S]*?)(?=\n\s*(?:OPTIONAL\s+MATCH|MATCH|WITH|RETURN|UNWIND|CALL|CREATE|MERGE|SET|DELETE|REMOVE|FOREACH|ORDER\s+BY|LIMIT|SKIP|UNION)\b|$)/gi;
+
+    let touched = false;
+    const rewritten = query.replace(matchSegmentRegex, (segment) => {
+      const vars = this.extractMatchVariables(segment);
+      if (!vars.length) {
+        return segment;
+      }
+
+      const predicate = this.buildTemporalPredicateForVars(vars);
+      if (!predicate) {
+        return segment;
+      }
+
+      touched = true;
+      const inlineClauseRegex =
+        /\b(?:WITH|RETURN|UNWIND|CALL|CREATE|MERGE|SET|DELETE|REMOVE|FOREACH|ORDER\s+BY|LIMIT|SKIP|UNION)\b/i;
+      const boundaryIndex = segment.search(inlineClauseRegex);
+      const whereMatch = /\bWHERE\b/i.exec(segment);
+
+      if (whereMatch) {
+        if (boundaryIndex > whereMatch.index) {
+          const head = segment.slice(0, boundaryIndex).trimEnd();
+          const tail = segment.slice(boundaryIndex).trimStart();
+          return `${head} AND ${predicate}\n${tail}`;
+        }
+        return `${segment} AND ${predicate}`;
+      }
+
+      if (boundaryIndex > 0) {
+        const head = segment.slice(0, boundaryIndex).trimEnd();
+        const tail = segment.slice(boundaryIndex).trimStart();
+        return `${head} WHERE ${predicate}\n${tail}`;
+      }
+
+      return `${segment}\nWHERE ${predicate}`;
+    });
+
+    return touched ? rewritten : query;
+  }
+
   // ============================================================================
   // GRAPHRAG TOOLS (3)
   // ============================================================================
@@ -683,16 +746,17 @@ export class ToolHandlers {
         mode === "global" || mode === "hybrid" ? mode : "local";
 
       if (language === "cypher") {
-        if (asOfTs) {
-          return this.errorEnvelope(
-            "GRAPH_QUERY_ASOF_UNSUPPORTED_FOR_CYPHER",
-            "asOf is currently supported only for language='natural'.",
-            true,
-            "Use language='natural' with asOf, or include temporal filtering directly in your Cypher query.",
-          );
-        }
+        const cypherQuery =
+          asOfTs !== null
+            ? this.applyTemporalFilterToCypher(query)
+            : query;
 
-        result = await this.context.memgraph.executeCypher(query);
+        result =
+          asOfTs !== null
+            ? await this.context.memgraph.executeCypher(cypherQuery, {
+                asOfTs,
+              })
+            : await this.context.memgraph.executeCypher(cypherQuery);
       } else {
         if (queryMode === "global" || queryMode === "hybrid") {
           const globalRows = await this.fetchGlobalCommunityRows(
@@ -770,7 +834,7 @@ export class ToolHandlers {
     rows: Array<{ nodeId?: string }>,
     asOfTs?: number | null,
   ): Array<{ nodeId?: string }> {
-    if (!asOfTs) {
+    if (asOfTs === null || asOfTs === undefined) {
       return rows;
     }
 
