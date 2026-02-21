@@ -1,5 +1,5 @@
 /**
- * stratSolver Code Graph MCP Server
+ * Code Graph MCP Server
  *
  * Provides 14 tools for code analysis:
  * - GraphRAG (3): graph_query, code_explain, find_pattern
@@ -336,7 +336,7 @@ class CodeGraphServer {
 
   constructor() {
     this.server = new Server({
-      name: 'stratSolver Code Graph',
+      name: process.env.CODE_GRAPH_SERVER_NAME || 'Code Graph MCP Server',
       version: '0.0.1',
     });
 

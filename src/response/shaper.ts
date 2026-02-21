@@ -1,8 +1,4 @@
-import {
-  estimateTokens,
-  makeBudget,
-  type ResponseProfile,
-} from "./budget.js";
+import { estimateTokens, makeBudget, type ResponseProfile } from "./budget.js";
 import { TOOL_OUTPUT_SCHEMAS, applyFieldPriority } from "./schemas.js";
 
 export interface ToolResponse {
@@ -22,11 +18,30 @@ function truncateString(input: string, maxLength: number): string {
   return `${input.slice(0, maxLength)}…(truncated)`;
 }
 
-function shapeValue(value: unknown, profile: ResponseProfile, depth = 0): unknown {
+function shapeValue(
+  value: unknown,
+  profile: ResponseProfile,
+  depth = 0,
+): unknown {
   const maxDepth = profile === "debug" ? 20 : 6;
-  const maxArray = profile === "balanced" ? 30 : profile === "debug" ? Number.POSITIVE_INFINITY : 10;
-  const maxKeys = profile === "balanced" ? 50 : profile === "debug" ? Number.POSITIVE_INFINITY : 20;
-  const maxStrLen = profile === "balanced" ? 4000 : profile === "debug" ? Number.POSITIVE_INFINITY : 1200;
+  const maxArray =
+    profile === "balanced"
+      ? 30
+      : profile === "debug"
+        ? Number.POSITIVE_INFINITY
+        : 10;
+  const maxKeys =
+    profile === "balanced"
+      ? 50
+      : profile === "debug"
+        ? Number.POSITIVE_INFINITY
+        : 20;
+  const maxStrLen =
+    profile === "balanced"
+      ? 4000
+      : profile === "debug"
+        ? Number.POSITIVE_INFINITY
+        : 1200;
 
   if (depth > maxDepth) {
     return "[…depth limit]";
@@ -46,13 +61,17 @@ function shapeValue(value: unknown, profile: ResponseProfile, depth = 0): unknow
   }
 
   if (value !== null && typeof value === "object") {
-    const entries = Object.entries(value as Record<string, unknown>).slice(0, maxKeys);
+    const entries = Object.entries(value as Record<string, unknown>).slice(
+      0,
+      maxKeys,
+    );
     const shaped = Object.fromEntries(
       entries.map(([key, item]) => [key, shapeValue(item, profile, depth + 1)]),
     );
     const totalKeys = Object.keys(value as Record<string, unknown>).length;
     if (totalKeys > maxKeys) {
-      (shaped as Record<string, unknown>)["…omitted"] = `${totalKeys - maxKeys} more keys`;
+      (shaped as Record<string, unknown>)["…omitted"] =
+        `${totalKeys - maxKeys} more keys`;
     }
     return shaped;
   }

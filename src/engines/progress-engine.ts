@@ -107,12 +107,13 @@ export class ProgressEngine {
       });
     }
 
-    // Link tasks to features
+    // Link tasks to features via featureId relationship
     for (const task of this.tasks.values()) {
       if (task.featureId) {
-        // @ts-expect-error - feature will be used for relationship population
         const feature = this.features.get(task.featureId);
-        // This will be populated when loading relationships
+        if (feature && Array.isArray((feature as any).taskIds)) {
+          (feature as any).taskIds.push(task.id);
+        }
       }
     }
   }

@@ -2,7 +2,7 @@
 
 /**
  * Graph Build CLI
- * Builds the code graph from the stratSolver codebase
+ * Builds the code graph from a workspace's source files.
  *
  * Usage:
  *   npm run graph:build
@@ -21,7 +21,7 @@ async function main() {
   const isVerbose = args.includes('--verbose');
   const projectRoot = path.resolve(process.cwd());
 
-  console.log('🔨 stratSolver Code Graph Builder');
+  console.log('🔨 Code Graph Builder');
   console.log(`📁 Project root: ${projectRoot}`);
   console.log(`🔄 Build mode: ${isFullBuild ? 'FULL' : 'INCREMENTAL'}`);
   console.log('');
