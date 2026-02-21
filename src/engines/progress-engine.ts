@@ -296,17 +296,55 @@ export class ProgressEngine {
   /**
    * Create a new feature
    */
-  createFeature(feature: Feature): Feature {
+  async createFeature(feature: Feature): Promise<Feature> {
     feature.startedAt = Date.now();
     this.features.set(feature.id, feature);
+    if (this.memgraph?.isConnected()) {
+      try {
+        await this.memgraph.executeCypher(
+          `MERGE (f:FEATURE {id: $id})
+           SET f.name = $name, f.status = $status,
+               f.description = $description, f.startedAt = $startedAt,
+               f.createdAt = $createdAt`,
+          {
+            id: feature.id,
+            name: feature.name,
+            status: feature.status,
+            description: feature.description ?? null,
+            startedAt: feature.startedAt,
+            createdAt: Date.now(),
+          },
+        );
+      } catch (err) {
+        console.error("[ProgressEngine] createFeature Memgraph write failed:", err);
+      }
+    }
     return feature;
   }
 
   /**
    * Create a new task
    */
-  createTask(task: Task): Task {
+  async createTask(task: Task): Promise<Task> {
     this.tasks.set(task.id, task);
+    if (this.memgraph?.isConnected()) {
+      try {
+        await this.memgraph.executeCypher(
+          `MERGE (t:TASK {id: $id})
+           SET t.name = $name, t.status = $status,
+               t.description = $description, t.createdAt = $createdAt`,
+          {
+            id: task.id,
+            name: task.name,
+            status: task.status,
+            description: task.description ?? null,
+            createdAt: Date.now(),
+          },
+        );
+      } catch (err) {
+        console.error("[ProgressEngine] createTask Memgraph write failed:", err);
+      }
+    }
     return task;
   }
 
