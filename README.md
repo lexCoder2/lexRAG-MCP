@@ -1,8 +1,27 @@
 # Code Graph Server
 
+![MCP](https://img.shields.io/badge/MCP-JSON--RPC%202.0-7A52F4)
+![Transport](https://img.shields.io/badge/Transport-stdio%20%7C%20http-0EA5E9)
+![Runtime](https://img.shields.io/badge/Node.js-18%2B-339933)
+![TypeScript](https://img.shields.io/badge/TypeScript-5.x-3178C6)
+![Graph](https://img.shields.io/badge/Graph-Memgraph-00B894)
+![License](https://img.shields.io/badge/License-MIT-F59E0B)
+
 Code Graph Server is an MCP-native memory and code intelligence layer for software agents.
 
 It turns your repository into a queryable graph + retrieval system so agents can answer architecture, impact, and planning questions without re-reading the entire codebase on every turn.
+
+---
+
+## At a glance
+
+| Capability | What it enables |
+|---|---|
+| **Code graph intelligence** | Cross-file dependency answers instead of raw file dumps |
+| **Agent memory** | Persistent decisions/episodes across sessions |
+| **Hybrid retrieval** | Better relevance for natural-language code questions |
+| **Temporal model** | Historical queries (`asOf`) and change diffs (`diff_since`) |
+| **MCP-native runtime** | Works cleanly with editor and agent orchestration clients |
 
 ## Why this exists
 
@@ -55,6 +74,24 @@ Retrieval for natural queries uses hybrid fusion:
 3. Graph expansion
 4. Reciprocal Rank Fusion (RRF)
 
+### System diagram
+
+```mermaid
+flowchart LR
+  A[Agent / MCP Client] --> B[MCP Server\nstdio or HTTP]
+  B --> C[Tool Handlers]
+  C --> D[Graph Orchestrator]
+  C --> E[Response Shaper]
+  D --> F[(Memgraph)]
+  D --> G[(Qdrant / Vector)]
+  E --> A
+
+  F --> H[Code Graph + Temporal Nodes]
+  G --> I[Semantic Retrieval Seeds]
+  C --> J[Hybrid Retriever\nVector + BM25 + Graph + RRF]
+  J --> E
+```
+
 ## Tooling surface
 
 The server exposes 20+ MCP tools across:
@@ -105,6 +142,26 @@ Workspace context is session-scoped.
 5. call `graph_rebuild`
 6. query with `graph_query` / other tools
 
+### MCP session flow diagram
+
+```mermaid
+sequenceDiagram
+  participant Client
+  participant Server as MCP HTTP Server
+
+  Client->>Server: initialize
+  Server-->>Client: mcp-session-id (header)
+
+  Client->>Server: graph_set_workspace (with mcp-session-id)
+  Server-->>Client: workspace context set
+
+  Client->>Server: graph_rebuild (with mcp-session-id)
+  Server-->>Client: QUEUED
+
+  Client->>Server: graph_query / graph_health
+  Server-->>Client: shaped response (compact/balanced/debug)
+```
+
 Example:
 
 ```bash
@@ -143,6 +200,12 @@ curl -s -X POST http://localhost:9000/mcp \
 
 - **stdio**: best for local editor integrations and short-lived sessions
 - **http**: best for multi-client agent fleets and remote orchestration
+
+### UI/UX notes for GitHub readers
+
+- Sections are ordered from value → architecture → quick start → operations.
+- Diagrams provide an immediate mental model before command details.
+- Badges provide a quick compatibility snapshot at first glance.
 
 Scripts:
 
