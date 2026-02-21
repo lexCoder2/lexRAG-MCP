@@ -595,6 +595,14 @@ This is the single biggest lever for hitting the Phase 1 target of `_tokenEstima
 - `graph_query` accepts `asOf` parameter and produces correct historical results
 - `diff_since` tool returns meaningful diff for two consecutive rebuilds
 
+**Implementation status (2026-02-21)**:
+- ✅ Added bi-temporal properties (`validFrom`, `validTo`, `createdAt`, `txId`) to FILE/FUNCTION/CLASS/IMPORT node writes in `src/graph/builder.ts`.
+- ✅ Added transaction propagation (`txId`, `txTimestamp`) through `src/graph/orchestrator.ts` build options/results.
+- ✅ Added `GRAPH_TX` creation on `graph_rebuild` start in `src/tools/tool-handlers.ts`.
+- ✅ Added `graph_query.asOf` (natural-language mode) and exposed schema support in both `src/server.ts` and `src/mcp-server.ts`.
+- ✅ Added `graph_health` transaction metadata (`latestTxId`, `latestTxTimestamp`, `txCount`).
+- ⏳ Remaining in Phase 2: full historical filtering for arbitrary Cypher mode and `diff_since` tool implementation.
+
 #### 2.1 Temporal schema extension
 
 Add bi-temporal properties to all mutable node types. Apply in `src/graph/builder.ts` during the `MERGE/SET` step for every node write.

@@ -20,6 +20,8 @@ export interface BuildOptions {
   projectId: string;
   sourceDir: string;
   exclude: string[];
+  txId?: string;
+  txTimestamp?: number;
 }
 
 export interface BuildResult {
@@ -31,6 +33,8 @@ export interface BuildResult {
   filesChanged: number;
   errors: string[];
   warnings: string[];
+  txId?: string;
+  txTimestamp?: number;
 }
 
 export class GraphOrchestrator {
@@ -77,6 +81,8 @@ export class GraphOrchestrator {
         ".next",
         ".code-graph",
       ],
+      txId: options.txId,
+      txTimestamp: options.txTimestamp,
     };
 
     const errors: string[] = [];
@@ -134,7 +140,12 @@ export class GraphOrchestrator {
       let nodesCreated = 0;
       let statementsToExecute: CypherStatement[] = [];
       const parsedFiles: Array<{ filePath: string; parsed: ParsedFile }> = [];
-      this.builder = new GraphBuilder(opts.projectId, opts.workspaceRoot);
+      this.builder = new GraphBuilder(
+        opts.projectId,
+        opts.workspaceRoot,
+        opts.txId,
+        opts.txTimestamp,
+      );
 
       for (const filePath of filesToProcess) {
         try {
@@ -229,6 +240,8 @@ export class GraphOrchestrator {
         filesChanged,
         errors,
         warnings,
+        txId: opts.txId,
+        txTimestamp: opts.txTimestamp,
       };
     } catch (error) {
       const duration = Date.now() - startTime;
@@ -242,6 +255,8 @@ export class GraphOrchestrator {
         filesChanged: 0,
         errors,
         warnings,
+        txId: opts.txId,
+        txTimestamp: opts.txTimestamp,
       };
     }
   }

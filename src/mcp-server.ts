@@ -42,6 +42,10 @@ const TOOLS: Tool[] = [
           type: 'number',
           description: 'Maximum results to return (default: 100)',
         },
+        asOf: {
+          type: 'string',
+          description: 'Optional ISO timestamp or epoch ms for temporal query mode (natural language only)',
+        },
       },
       required: ['query'],
     },
@@ -120,7 +124,7 @@ const TOOLS: Tool[] = [
         },
         type: {
           type: 'string',
-          enum: ['component', 'hook', 'service', 'context', 'utility'],
+          enum: ['component', 'hook', 'service', 'context', 'utility', 'engine', 'class', 'module'],
           description: 'Type of code',
         },
         dependencies: {
@@ -177,17 +181,21 @@ const TOOLS: Tool[] = [
     inputSchema: {
       type: 'object',
       properties: {
+        files: {
+          type: 'array',
+          items: { type: 'string' },
+          description: 'Changed file paths (primary parameter)',
+        },
         changedFiles: {
           type: 'array',
           items: { type: 'string' },
-          description: 'Changed file paths',
+          description: 'Alias for files — accepted for compatibility',
         },
         depth: {
           type: 'number',
           description: 'How deep to traverse dependencies (1-5)',
         },
       },
-      required: ['changedFiles'],
     },
   },
 
@@ -202,13 +210,9 @@ const TOOLS: Tool[] = [
           items: { type: 'string' },
           description: 'Test files to run',
         },
-        watch: {
+        parallel: {
           type: 'boolean',
-          description: 'Run in watch mode',
-        },
-        coverage: {
-          type: 'boolean',
-          description: 'Generate coverage report',
+          description: 'Run tests in parallel (default: true)',
         },
       },
       required: ['testFiles'],
@@ -299,7 +303,7 @@ const TOOLS: Tool[] = [
   {
     name: 'graph_rebuild',
     description:
-      'Rebuild the code graph from scratch or incrementally update it.',
+      'Rebuild the code graph from source files. Full mode reprocesses all files; incremental updates only changed files since the last build.',
     inputSchema: {
       type: 'object',
       properties: {
@@ -311,6 +315,18 @@ const TOOLS: Tool[] = [
         verbose: {
           type: 'boolean',
           description: 'Enable verbose logging',
+        },
+        workspaceRoot: {
+          type: 'string',
+          description: 'Absolute path to workspace root (overrides session context)',
+        },
+        sourceDir: {
+          type: 'string',
+          description: 'Source directory to scan (default: <workspaceRoot>/src)',
+        },
+        projectId: {
+          type: 'string',
+          description: 'Project identifier for graph node scoping',
         },
       },
     },
@@ -348,7 +364,7 @@ export class MCPServer {
 
   constructor() {
     this.server = new Server({
-      name: 'stratSolver Code Graph',
+      name: process.env.CODE_GRAPH_SERVER_NAME || 'Code Graph MCP Server',
       version: '1.0.0',
     });
 

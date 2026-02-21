@@ -425,6 +425,20 @@ export class ToolHandlers {
     return `MATCH (n) WHERE n.projectId = '${projectId}' RETURN labels(n)[0] as type, count(n) as count ORDER BY count DESC`;
   }
 
+  private toEpochMillis(asOf?: string): number | null {
+    if (!asOf || typeof asOf !== "string") {
+      return null;
+    }
+
+    if (/^\d+$/.test(asOf)) {
+      const numeric = Number(asOf);
+      return Number.isFinite(numeric) ? numeric : null;
+    }
+
+    const parsed = Date.parse(asOf);
+    return Number.isNaN(parsed) ? null : parsed;
+  }
+
   private async ensureEmbeddings(): Promise<void> {
     if (this.embeddingsReady || !this.embeddingEngine) {
       return;
@@ -466,16 +480,32 @@ export class ToolHandlers {
       language = "natural",
       limit = 100,
       profile = "compact",
+      asOf,
     } = args;
 
     try {
       let result;
       const { projectId, workspaceRoot } = this.getActiveProjectContext();
+      const asOfTs = this.toEpochMillis(asOf);
       if (language === "cypher") {
+        if (asOfTs) {
+          return this.errorEnvelope(
+            "GRAPH_QUERY_ASOF_UNSUPPORTED_FOR_CYPHER",
+            "asOf is currently supported only for language='natural'.",
+            true,
+            "Use language='natural' with asOf, or include temporal filtering directly in your Cypher query.",
+          );
+        }
+
         result = await this.context.memgraph.executeCypher(query);
       } else {
         const cypher = this.routeNaturalToCypher(query, projectId);
-        result = await this.context.memgraph.executeCypher(cypher);
+        if (asOfTs) {
+          const temporalCypher = `MATCH (n) WHERE n.projectId = '${projectId}' AND n.validFrom <= ${asOfTs} AND (n.validTo IS NULL OR n.validTo > ${asOfTs}) RETURN labels(n)[0] as type, count(n) as count ORDER BY count DESC`;
+          result = await this.context.memgraph.executeCypher(temporalCypher);
+        } else {
+          result = await this.context.memgraph.executeCypher(cypher);
+        }
       }
 
       if (result.error) {
@@ -494,6 +524,7 @@ export class ToolHandlers {
             language === "natural" ? this.classifyIntent(query) : "cypher",
           projectId,
           workspaceRoot,
+          asOf: asOfTs,
           count: limited.length,
           results: limited,
         },
@@ -1084,6 +1115,22 @@ export class ToolHandlers {
       resolvedContext = adapted.context;
       this.setActiveProjectContext(resolvedContext);
       const { workspaceRoot, sourceDir, projectId } = resolvedContext;
+      const txTimestamp = Date.now();
+      const txId = `tx-${txTimestamp}-${Math.random().toString(36).slice(2, 8)}`;
+
+      if (this.context.memgraph.isConnected()) {
+        await this.context.memgraph.executeCypher(
+          `CREATE (tx:GRAPH_TX {id: $id, projectId: $projectId, type: $type, timestamp: $timestamp, mode: $mode, sourceDir: $sourceDir})`,
+          {
+            id: txId,
+            projectId,
+            type: mode === "full" ? "full_rebuild" : "incremental_rebuild",
+            timestamp: txTimestamp,
+            mode,
+            sourceDir,
+          },
+        );
+      }
 
       if (!fs.existsSync(workspaceRoot)) {
         return this.errorEnvelope(
@@ -1113,6 +1160,8 @@ export class ToolHandlers {
           workspaceRoot,
           projectId,
           sourceDir,
+          txId,
+          txTimestamp,
           exclude: [
             "node_modules",
             "dist",
@@ -1140,6 +1189,8 @@ export class ToolHandlers {
           sourceDir,
           workspaceRoot,
           projectId,
+          txId,
+          txTimestamp,
           runtimePathFallback: adapted.usedFallback,
           runtimePathFallbackReason: adapted.fallbackReason || null,
           message: `Graph rebuild ${mode} mode initiated. Processing ${mode === "full" ? "all" : "changed"} files in background...`,
@@ -1178,6 +1229,17 @@ export class ToolHandlers {
       const { workspaceRoot, sourceDir, projectId } =
         this.getActiveProjectContext();
 
+      const latestTxResult = await this.context.memgraph.executeCypher(
+        "MATCH (tx:GRAPH_TX {projectId: $projectId}) RETURN tx.id AS id, tx.timestamp AS timestamp ORDER BY tx.timestamp DESC LIMIT 1",
+        { projectId },
+      );
+      const txCountResult = await this.context.memgraph.executeCypher(
+        "MATCH (tx:GRAPH_TX {projectId: $projectId}) RETURN count(tx) AS txCount",
+        { projectId },
+      );
+      const latestTxRow = latestTxResult.data?.[0] || {};
+      const txCountRow = txCountResult.data?.[0] || {};
+
       return this.formatSuccess(
         {
           status: "ok",
@@ -1201,6 +1263,9 @@ export class ToolHandlers {
           rebuild: {
             lastRequestedAt: this.lastGraphRebuildAt || null,
             lastMode: this.lastGraphRebuildMode || null,
+            latestTxId: latestTxRow.id ?? null,
+            latestTxTimestamp: latestTxRow.timestamp ?? null,
+            txCount: txCountRow.txCount ?? 0,
           },
           freshness: {
             staleFileEstimate: null,

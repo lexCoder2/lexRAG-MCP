@@ -64,14 +64,23 @@ export class GraphBuilder {
   private processedNodes = new Set<string>();
   private projectId: string;
   private workspaceRoot: string;
+  private txId: string;
+  private txTimestamp: number;
 
-  constructor(projectId?: string, workspaceRoot?: string) {
+  constructor(
+    projectId?: string,
+    workspaceRoot?: string,
+    txId?: string,
+    txTimestamp?: number,
+  ) {
     this.workspaceRoot =
       workspaceRoot || process.env.CODE_GRAPH_WORKSPACE_ROOT || process.cwd();
     this.projectId =
       projectId ||
       process.env.CODE_GRAPH_PROJECT_ID ||
       path.basename(this.workspaceRoot);
+    this.txId = txId || process.env.CODE_GRAPH_TX_ID || `tx-${Date.now()}`;
+    this.txTimestamp = txTimestamp || Date.now();
   }
 
   private scopedId(rawId: string): string {
@@ -147,6 +156,10 @@ export class GraphBuilder {
             f.hash = $hash,
             f.relativePath = $relativePath,
             f.projectId = $projectId,
+          f.validFrom = $validFrom,
+          f.validTo = $validTo,
+          f.createdAt = $createdAt,
+          f.txId = $txId,
             f.lastModified = datetime()
       `,
       params: {
@@ -158,6 +171,10 @@ export class GraphBuilder {
         hash: parsedFile.hash || "",
         relativePath: relativePath,
         projectId: this.projectId,
+        validFrom: this.txTimestamp,
+        validTo: null,
+        createdAt: this.txTimestamp,
+        txId: this.txId,
       },
     };
     this.statements.push(statement);
@@ -239,6 +256,10 @@ export class GraphBuilder {
             func.endLine = $endLine,
             func.LOC = $LOC,
             func.parameters = $parameters,
+          func.validFrom = $validFrom,
+          func.validTo = $validTo,
+          func.createdAt = $createdAt,
+          func.txId = $txId,
             func.projectId = $projectId
       `,
       params: {
@@ -250,6 +271,10 @@ export class GraphBuilder {
         LOC: fn.LOC || 1,
         // Memgraph only supports lists of primitives as properties; serialize objects to JSON string
         parameters: JSON.stringify(fn.parameters),
+        validFrom: this.txTimestamp,
+        validTo: null,
+        createdAt: this.txTimestamp,
+        txId: this.txId,
         projectId: this.projectId,
       },
     });
@@ -292,6 +317,10 @@ export class GraphBuilder {
             cls.startLine = $startLine,
             cls.endLine = $endLine,
             cls.LOC = $LOC,
+          cls.validFrom = $validFrom,
+          cls.validTo = $validTo,
+          cls.createdAt = $createdAt,
+          cls.txId = $txId,
             cls.projectId = $projectId
       `,
       params: {
@@ -301,6 +330,10 @@ export class GraphBuilder {
         startLine: cls.startLine || cls.line,
         endLine: cls.endLine || cls.line,
         LOC: cls.LOC || 1,
+        validFrom: this.txTimestamp,
+        validTo: null,
+        createdAt: this.txTimestamp,
+        txId: this.txId,
         projectId: this.projectId,
       },
     });
@@ -418,6 +451,10 @@ export class GraphBuilder {
         SET imp.source = $source,
             imp.specifiers = $specifiers,
             imp.startLine = $startLine,
+          imp.validFrom = $validFrom,
+          imp.validTo = $validTo,
+          imp.createdAt = $createdAt,
+          imp.txId = $txId,
             imp.projectId = $projectId
       `,
       params: {
@@ -425,6 +462,10 @@ export class GraphBuilder {
         source: imp.source,
         specifiers: imp.specifiers,
         startLine: imp.startLine,
+        validFrom: this.txTimestamp,
+        validTo: null,
+        createdAt: this.txTimestamp,
+        txId: this.txId,
         projectId: this.projectId,
       },
     });
