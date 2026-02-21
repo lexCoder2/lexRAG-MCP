@@ -16,6 +16,7 @@ import QdrantClient from "../vector/qdrant-client.js";
 import EmbeddingEngine from "../vector/embedding-engine.js";
 import type { GraphNode } from "../graph/index.js";
 import { getRequestContext } from "../request-context.js";
+import { formatResponse, errorResponse } from "../response/shaper.js";
 
 export interface ToolContext {
   index: GraphIndexManager;
@@ -202,19 +203,18 @@ export class ToolHandlers {
     recoverable = true,
     hint?: string,
   ): string {
-    return JSON.stringify(
-      {
-        ok: false,
-        error: {
-          code,
-          reason,
-          recoverable,
-          hint,
-        },
-      },
-      null,
-      2,
-    );
+    const response = errorResponse(
+      code,
+      reason,
+      hint || "Review tool input and retry.",
+    ) as unknown as Record<string, unknown>;
+    response.error = {
+      code,
+      reason,
+      recoverable,
+      hint,
+    };
+    return JSON.stringify(response, null, 2);
   }
 
   private canonicalizePaths(text: string): string {
@@ -249,14 +249,22 @@ export class ToolHandlers {
     return value;
   }
 
-  private formatSuccess(data: unknown, profile: string = "compact"): string {
+  private formatSuccess(
+    data: unknown,
+    profile: string = "compact",
+    summary?: string,
+    toolName?: string,
+  ): string {
     const shaped = profile === "debug" ? data : this.compactValue(data);
+    const safeProfile =
+      profile === "balanced" || profile === "debug" ? profile : "compact";
     return JSON.stringify(
-      {
-        ok: true,
-        profile,
-        data: shaped,
-      },
+      formatResponse(
+        summary || "Operation completed successfully.",
+        shaped,
+        safeProfile,
+        toolName,
+      ),
       null,
       2,
     );
@@ -490,6 +498,8 @@ export class ToolHandlers {
           results: limited,
         },
         profile,
+        `Query returned ${limited.length} row(s).`,
+        "graph_query",
       );
     } catch (error) {
       return this.errorEnvelope("GRAPH_QUERY_EXCEPTION", String(error), true);
@@ -1136,6 +1146,8 @@ export class ToolHandlers {
           note: "Use graph_query tool to check progress or query results",
         },
         profile,
+        `Graph rebuild queued in ${mode} mode for project ${projectId}.`,
+        "graph_rebuild",
       );
     } catch (error) {
       return this.errorEnvelope(
@@ -1196,6 +1208,8 @@ export class ToolHandlers {
           },
         },
         profile,
+        "Graph health is OK.",
+        "graph_health",
       );
     } catch (error) {
       return this.errorEnvelope("GRAPH_HEALTH_FAILED", String(error), true);
