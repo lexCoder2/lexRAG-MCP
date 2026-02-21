@@ -15,13 +15,13 @@ It turns your repository into a queryable graph + retrieval system so agents can
 
 ## At a glance
 
-| Capability | What it enables |
-|---|---|
-| **Code graph intelligence** | Cross-file dependency answers instead of raw file dumps |
-| **Agent memory** | Persistent decisions/episodes across sessions |
-| **Hybrid retrieval** | Better relevance for natural-language code questions |
-| **Temporal model** | Historical queries (`asOf`) and change diffs (`diff_since`) |
-| **MCP-native runtime** | Works cleanly with editor and agent orchestration clients |
+| Capability                  | What it enables                                             |
+| --------------------------- | ----------------------------------------------------------- |
+| **Code graph intelligence** | Cross-file dependency answers instead of raw file dumps     |
+| **Agent memory**            | Persistent decisions/episodes across sessions               |
+| **Hybrid retrieval**        | Better relevance for natural-language code questions        |
+| **Temporal model**          | Historical queries (`asOf`) and change diffs (`diff_since`) |
+| **MCP-native runtime**      | Works cleanly with editor and agent orchestration clients   |
 
 ## Why this exists
 
@@ -76,21 +76,7 @@ Retrieval for natural queries uses hybrid fusion:
 
 ### System diagram
 
-```mermaid
-flowchart LR
-  A[Agent / MCP Client] --> B[MCP Server\nstdio or HTTP]
-  B --> C[Tool Handlers]
-  C --> D[Graph Orchestrator]
-  C --> E[Response Shaper]
-  D --> F[(Memgraph)]
-  D --> G[(Qdrant / Vector)]
-  E --> A
-
-  F --> H[Code Graph + Temporal Nodes]
-  G --> I[Semantic Retrieval Seeds]
-  C --> J[Hybrid Retriever\nVector + BM25 + Graph + RRF]
-  J --> E
-```
+![System Architecture](docs/diagrams/system-architecture.svg)
 
 ## Tooling surface
 
@@ -148,12 +134,12 @@ Workspace context is session-scoped.
 
 ### Visual examples (no transport boilerplate)
 
-| Workflow | Minimal tool sequence | Outcome |
-|---|---|---|
-| **Boot a project context** | `initialize` → `graph_set_workspace` → `graph_rebuild` | Graph becomes query-ready for that MCP session |
-| **Understand a subsystem** | `graph_query` → `code_explain` → `semantic_slice` | Dependency map + concrete code slice |
-| **Plan safe changes** | `impact_analyze` → `test_select` → `test_run` | Change radius + focused test execution |
-| **Coordinate multiple agents** | `agent_claim` → `context_pack` → `task_update` | Ownership, task context, and durable progress |
+| Workflow                       | Minimal tool sequence                                  | Outcome                                        |
+| ------------------------------ | ------------------------------------------------------ | ---------------------------------------------- |
+| **Boot a project context**     | `initialize` → `graph_set_workspace` → `graph_rebuild` | Graph becomes query-ready for that MCP session |
+| **Understand a subsystem**     | `graph_query` → `code_explain` → `semantic_slice`      | Dependency map + concrete code slice           |
+| **Plan safe changes**          | `impact_analyze` → `test_select` → `test_run`          | Change radius + focused test execution         |
+| **Coordinate multiple agents** | `agent_claim` → `context_pack` → `task_update`         | Ownership, task context, and durable progress  |
 
 #### Example A — Set workspace context
 
