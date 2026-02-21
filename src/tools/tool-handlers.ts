@@ -223,9 +223,7 @@ export class ToolHandlers {
         sourceDir: context.sourceDir,
         projectId: context.projectId,
         debounceMs: 500,
-        ignorePatterns: (
-          process.env.CODE_GRAPH_IGNORE_PATTERNS || ""
-        )
+        ignorePatterns: (process.env.CODE_GRAPH_IGNORE_PATTERNS || "")
           .split(",")
           .map((item) => item.trim())
           .filter(Boolean),
@@ -302,7 +300,7 @@ export class ToolHandlers {
     }
 
     this.testEngine = new TestEngine(this.context.index);
-    this.progressEngine = new ProgressEngine(this.context.index);
+    this.progressEngine = new ProgressEngine(this.context.index, this.context.memgraph);
     this.episodeEngine = new EpisodeEngine(this.context.memgraph);
     this.coordinationEngine = new CoordinationEngine(this.context.memgraph);
     this.communityDetector = new CommunityDetector(this.context.memgraph);
@@ -329,6 +327,15 @@ export class ToolHandlers {
     void this.qdrant.connect().catch((error) => {
       console.warn("[ToolHandlers] Qdrant connection skipped:", error);
     });
+
+    if (!process.env.CODE_GRAPH_SUMMARIZER_URL) {
+      console.warn(
+        "[summarizer] CODE_GRAPH_SUMMARIZER_URL is not set. " +
+          "Heuristic local summaries will be used, reducing vector search quality and " +
+          "compact-profile accuracy. " +
+          "Point this to an OpenAI-compatible /v1/chat/completions endpoint for production use.",
+      );
+    }
   }
 
   private errorEnvelope(
@@ -657,14 +664,11 @@ export class ToolHandlers {
   private async resolveSinceAnchor(
     since: string,
     projectId: string,
-  ): Promise<
-    | {
-        sinceTs: number;
-        mode: "txId" | "timestamp" | "gitCommit" | "agentId";
-        anchorValue: string;
-      }
-    | null
-  > {
+  ): Promise<{
+    sinceTs: number;
+    mode: "txId" | "timestamp" | "gitCommit" | "agentId";
+    anchorValue: string;
+  } | null> {
     const trimmed = since.trim();
     if (!trimmed) {
       return null;
@@ -825,14 +829,11 @@ export class ToolHandlers {
       let result;
       const { projectId, workspaceRoot } = this.getActiveProjectContext();
       const asOfTs = this.toEpochMillis(asOf);
-      const queryMode =
-        mode === "global" || mode === "hybrid" ? mode : "local";
+      const queryMode = mode === "global" || mode === "hybrid" ? mode : "local";
 
       if (language === "cypher") {
         const cypherQuery =
-          asOfTs !== null
-            ? this.applyTemporalFilterToCypher(query)
-            : query;
+          asOfTs !== null ? this.applyTemporalFilterToCypher(query) : query;
 
         result =
           asOfTs !== null
@@ -857,7 +858,10 @@ export class ToolHandlers {
               limit,
               mode: "hybrid",
             });
-            const filteredLocal = this.filterTemporalResults(localResults, asOfTs);
+            const filteredLocal = this.filterTemporalResults(
+              localResults,
+              asOfTs,
+            );
             result = {
               data: [
                 {
@@ -878,7 +882,10 @@ export class ToolHandlers {
             limit,
             mode: "hybrid",
           });
-          const filteredLocal = this.filterTemporalResults(localResults, asOfTs);
+          const filteredLocal = this.filterTemporalResults(
+            localResults,
+            asOfTs,
+          );
           result = { data: filteredLocal };
         }
       }
@@ -940,7 +947,8 @@ export class ToolHandlers {
 
       return (
         validFrom <= asOfTs &&
-        (!Number.isFinite(validTo) || (validTo !== undefined && validTo > asOfTs))
+        (!Number.isFinite(validTo) ||
+          (validTo !== undefined && validTo > asOfTs))
       );
     });
   }
@@ -1419,7 +1427,10 @@ export class ToolHandlers {
       if (String(status || "").toLowerCase() === "completed") {
         const sessionId = this.getCurrentSessionId() || "session-unknown";
         const runtimeAgentId = String(
-          assignee || args?.agentId || process.env.CODE_GRAPH_AGENT_ID || "agent-local",
+          assignee ||
+            args?.agentId ||
+            process.env.CODE_GRAPH_AGENT_ID ||
+            "agent-local",
         );
         const { projectId } = this.getActiveProjectContext();
 
@@ -1454,7 +1465,8 @@ export class ToolHandlers {
           const decisionEpisodeId = await this.episodeEngine!.add(
             {
               type: "DECISION",
-              content: `Task ${taskId} marked completed. ${notes ? `Notes: ${String(notes)}` : ""}`.trim(),
+              content:
+                `Task ${taskId} marked completed. ${notes ? `Notes: ${String(notes)}` : ""}`.trim(),
               taskId: String(taskId),
               outcome: "success",
               agentId: runtimeAgentId,
@@ -1694,9 +1706,8 @@ export class ToolHandlers {
           ],
         })
         .then(async () => {
-          const invalidated = await this.coordinationEngine!.invalidateStaleClaims(
-            projectId,
-          );
+          const invalidated =
+            await this.coordinationEngine!.invalidateStaleClaims(projectId);
           if (invalidated > 0) {
             console.error(
               `[coordination] Invalidated ${invalidated} stale claim(s) post-rebuild for project ${projectId}`,
@@ -1704,6 +1715,17 @@ export class ToolHandlers {
           }
 
           if (mode === "full") {
+            const bm25Result = await this.hybridRetriever?.ensureBM25Index();
+            if (bm25Result?.created) {
+              console.error(
+                `[bm25] Created text_search symbol_index for project ${projectId}`,
+              );
+            } else if (bm25Result?.error) {
+              console.error(
+                `[bm25] symbol_index unavailable: ${bm25Result.error}`,
+              );
+            }
+
             const communityRun = await this.communityDetector!.run(projectId);
             console.error(
               `[community] computed ${communityRun.communities} communities across ${communityRun.members} member node(s) for project ${projectId}`,
@@ -1798,6 +1820,16 @@ export class ToolHandlers {
             ready: this.embeddingsReady,
             generated: embeddingCount,
             coverage: embeddingCoverage,
+          },
+          retrieval: {
+            bm25IndexExists: this.hybridRetriever?.bm25Mode === "native",
+            mode: this.hybridRetriever?.bm25Mode ?? "not_initialized",
+          },
+          summarizer: {
+            configured: !!(process.env.CODE_GRAPH_SUMMARIZER_URL),
+            endpoint: process.env.CODE_GRAPH_SUMMARIZER_URL
+              ? "[configured]"
+              : null,
           },
           rebuild: {
             lastRequestedAt: this.lastGraphRebuildAt || null,
@@ -2244,7 +2276,9 @@ export class ToolHandlers {
 
     try {
       const contextSessionId = this.getCurrentSessionId() || "session-unknown";
-      const runtimeAgentId = String(agentId || process.env.CODE_GRAPH_AGENT_ID || "agent-local");
+      const runtimeAgentId = String(
+        agentId || process.env.CODE_GRAPH_AGENT_ID || "agent-local",
+      );
       const { projectId } = this.getActiveProjectContext();
 
       const episodeId = await this.episodeEngine!.add(
@@ -2303,8 +2337,13 @@ export class ToolHandlers {
       const explicitEntities = Array.isArray(entities)
         ? entities.map((item) => String(item))
         : [];
-      const embeddingEntityHints = await this.inferEpisodeEntityHints(query, limit);
-      const mergedEntities = [...new Set([...explicitEntities, ...embeddingEntityHints])];
+      const embeddingEntityHints = await this.inferEpisodeEntityHints(
+        query,
+        limit,
+      );
+      const mergedEntities = [
+        ...new Set([...explicitEntities, ...embeddingEntityHints]),
+      ];
       const episodes = await this.episodeEngine!.recall({
         query,
         projectId,
@@ -2563,7 +2602,10 @@ export class ToolHandlers {
       const { projectId, workspaceRoot } = this.getActiveProjectContext();
 
       const seedIds = this.findSeedNodeIds(task, 5);
-      const expandedSeedIds = await this.expandInterfaceSeeds(seedIds, projectId);
+      const expandedSeedIds = await this.expandInterfaceSeeds(
+        seedIds,
+        projectId,
+      );
       const pprResults = await runPPR(
         {
           projectId,
@@ -2574,7 +2616,9 @@ export class ToolHandlers {
       );
 
       const codeCandidates = pprResults.filter((item) =>
-        ["FUNCTION", "CLASS", "FILE"].includes(String(item.type || "").toUpperCase()),
+        ["FUNCTION", "CLASS", "FILE"].includes(
+          String(item.type || "").toUpperCase(),
+        ),
       );
       const coreSymbols = await this.materializeCoreSymbols(
         codeCandidates,
@@ -2598,7 +2642,9 @@ export class ToolHandlers {
         : [];
 
       const entryPoint =
-        coreSymbols[0]?.symbolName || coreSymbols[0]?.file || "No entry point found";
+        coreSymbols[0]?.symbolName ||
+        coreSymbols[0]?.file ||
+        "No entry point found";
       const summary = `Task briefing for '${task}': start at ${entryPoint}. Focus on ${coreSymbols.length} high-relevance symbol(s) and resolve ${activeBlockers.length} active blocker(s).`;
 
       const pack: Record<string, unknown> = {
@@ -2633,7 +2679,9 @@ export class ToolHandlers {
           : null,
         pprScores:
           profile === "debug"
-            ? Object.fromEntries(pprResults.map((item) => [item.nodeId, item.score]))
+            ? Object.fromEntries(
+                pprResults.map((item) => [item.nodeId, item.score]),
+              )
             : undefined,
       };
 
@@ -2643,12 +2691,7 @@ export class ToolHandlers {
       this.trimContextPackToBudget(pack, budget.maxTokens);
       pack.tokenEstimate = estimateTokens(pack);
 
-      return this.formatSuccess(
-        pack,
-        safeProfile,
-        summary,
-        "context_pack",
-      );
+      return this.formatSuccess(pack, safeProfile, summary, "context_pack");
     } catch (error) {
       return this.errorEnvelope("CONTEXT_PACK_FAILED", String(error), true);
     }
@@ -2710,7 +2753,12 @@ export class ToolHandlers {
               .getRelationshipsTo(node.id)
               .filter((rel) => rel.type === "CALLS")
               .slice(0, 10)
-              .map((rel) => ({ id: rel.from, name: this.context.index.getNode(rel.from)?.properties?.name || rel.from }))
+              .map((rel) => ({
+                id: rel.from,
+                name:
+                  this.context.index.getNode(rel.from)?.properties?.name ||
+                  rel.from,
+              }))
           : [];
 
       const outgoingCalls =
@@ -2719,7 +2767,12 @@ export class ToolHandlers {
               .getRelationshipsFrom(node.id)
               .filter((rel) => rel.type === "CALLS")
               .slice(0, 10)
-              .map((rel) => ({ id: rel.to, name: this.context.index.getNode(rel.to)?.properties?.name || rel.to }))
+              .map((rel) => ({
+                id: rel.to,
+                name:
+                  this.context.index.getNode(rel.to)?.properties?.name ||
+                  rel.to,
+              }))
           : [];
 
       const includeKnowledge = sliceContext === "full";
@@ -2736,10 +2789,7 @@ export class ToolHandlers {
         endLine: rangeEnd,
         code,
         symbolName: String(node.properties.name || path.basename(filePath)),
-        pprScore:
-          typeof pprScore === "number"
-            ? pprScore
-            : undefined,
+        pprScore: typeof pprScore === "number" ? pprScore : undefined,
         incomingCallers,
         outgoingCalls,
         relevantDecisions: decisions,
@@ -2771,7 +2821,8 @@ export class ToolHandlers {
 
     const scored = candidates
       .map((node) => {
-        const haystack = `${node.id} ${node.properties.name || ""} ${node.properties.path || ""}`.toLowerCase();
+        const haystack =
+          `${node.id} ${node.properties.name || ""} ${node.properties.path || ""}`.toLowerCase();
         const score = tokens.reduce(
           (acc, token) => acc + (haystack.includes(token) ? 1 : 0),
           0,
@@ -2879,7 +2930,9 @@ export class ToolHandlers {
       return null;
     }
 
-    let filePath = String(node.properties.path || node.properties.filePath || "");
+    let filePath = String(
+      node.properties.path || node.properties.filePath || "",
+    );
     if (!filePath) {
       const parents = this.context.index
         .getRelationshipsTo(node.id)
@@ -2887,14 +2940,18 @@ export class ToolHandlers {
       const fileNode = parents
         .map((rel) => this.context.index.getNode(rel.from))
         .find((candidate) => candidate?.type === "FILE");
-      filePath = String(fileNode?.properties.path || fileNode?.properties.filePath || "");
+      filePath = String(
+        fileNode?.properties.path || fileNode?.properties.filePath || "",
+      );
     }
 
     if (!filePath) {
       filePath = node.id;
     }
 
-    const startLine = Number(node.properties.startLine || node.properties.line || 1);
+    const startLine = Number(
+      node.properties.startLine || node.properties.line || 1,
+    );
     const endLine = Number(node.properties.endLine || startLine + 40);
 
     return {
@@ -2916,8 +2973,12 @@ export class ToolHandlers {
         return "";
       }
       const lines = fs.readFileSync(absolutePath, "utf-8").split("\n");
-      const snippet = lines.slice(Math.max(0, startLine - 1), Math.max(startLine, endLine)).join("\n");
-      return snippet.length > maxChars ? `${snippet.slice(0, maxChars - 3)}...` : snippet;
+      const snippet = lines
+        .slice(Math.max(0, startLine - 1), Math.max(startLine, endLine))
+        .join("\n");
+      return snippet.length > maxChars
+        ? `${snippet.slice(0, maxChars - 3)}...`
+        : snippet;
     } catch {
       return "";
     }
@@ -2954,7 +3015,10 @@ export class ToolHandlers {
     }));
   }
 
-  private async findDecisionEpisodes(selectedIds: string[], projectId: string): Promise<any[]> {
+  private async findDecisionEpisodes(
+    selectedIds: string[],
+    projectId: string,
+  ): Promise<any[]> {
     if (!selectedIds.length) {
       return [];
     }
@@ -2975,7 +3039,10 @@ export class ToolHandlers {
     }));
   }
 
-  private async findLearnings(selectedIds: string[], projectId: string): Promise<any[]> {
+  private async findLearnings(
+    selectedIds: string[],
+    projectId: string,
+  ): Promise<any[]> {
     if (!selectedIds.length) {
       return [];
     }
@@ -3029,7 +3096,10 @@ export class ToolHandlers {
     }));
   }
 
-  private trimContextPackToBudget(pack: Record<string, any>, budget: number): void {
+  private trimContextPackToBudget(
+    pack: Record<string, any>,
+    budget: number,
+  ): void {
     if (!Number.isFinite(budget)) {
       return;
     }
@@ -3113,7 +3183,8 @@ export class ToolHandlers {
           .getRelationshipsFrom(fileNode.id)
           .filter((rel) => rel.type === "CONTAINS")
           .map((rel) => rel.to);
-        const targetName = normalizedSymbol.split(".").pop() || normalizedSymbol;
+        const targetName =
+          normalizedSymbol.split(".").pop() || normalizedSymbol;
         const child = childIds
           .map((id) => this.context.index.getNode(id))
           .find((node) => node?.properties?.name === targetName);
