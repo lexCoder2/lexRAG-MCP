@@ -1435,6 +1435,13 @@ When `semantic_slice` is called from within the `context_pack` pipeline (Phase 5
 - Auto-generated community labels are human-readable (e.g. `"AuthServices"`, `"DataLayer"`)
 - LLM-backed community summaries fall back to heuristic summaries if `CODE_GRAPH_SUMMARIZER_URL` is not set
 
+**Implementation status (2026-02-21)**:
+- ✅ Added `src/engines/community-detector.ts` with heuristic community clustering over FILE/FUNCTION/CLASS nodes.
+- ✅ `graph_rebuild` full-mode completion now triggers `CommunityDetector.run(projectId)` asynchronously in `src/tools/tool-handlers.ts`.
+- ✅ Added `graph_query.mode` support (`local`, `global`, `hybrid`) and global-mode retrieval from COMMUNITY summaries in `src/tools/tool-handlers.ts`.
+- ✅ Added `graph_query.mode` schema support on both MCP surfaces (`src/server.ts`, `src/mcp-server.ts`).
+- ✅ Community labels are auto-derived from dominant path segments with fallback to `misc`, and summaries are heuristic when no external summarizer is configured.
+
 #### 7.1 Leiden community detection — when it runs
 
 ```

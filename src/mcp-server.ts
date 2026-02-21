@@ -39,6 +39,11 @@ const TOOLS: Tool[] = [
           description:
             "Query language: cypher for Cypher syntax, natural for plain English",
         },
+        mode: {
+          type: "string",
+          enum: ["local", "global", "hybrid"],
+          description: "Query mode for natural language requests",
+        },
         limit: {
           type: "number",
           description: "Maximum results to return (default: 100)",

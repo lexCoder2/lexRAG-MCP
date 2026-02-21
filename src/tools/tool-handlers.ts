@@ -21,6 +21,7 @@ import EpisodeEngine, { type EpisodeType } from "../engines/episode-engine.js";
 import CoordinationEngine, {
   type ClaimType,
 } from "../engines/coordination-engine.js";
+import CommunityDetector from "../engines/community-detector.js";
 import { runPPR } from "../graph/ppr.js";
 import {
   estimateTokens,
@@ -50,6 +51,7 @@ export class ToolHandlers {
   private embeddingEngine?: EmbeddingEngine;
   private episodeEngine?: EpisodeEngine;
   private coordinationEngine?: CoordinationEngine;
+  private communityDetector?: CommunityDetector;
   private embeddingsReady = false;
   private lastGraphRebuildAt?: string;
   private lastGraphRebuildMode?: "full" | "incremental";
@@ -191,6 +193,7 @@ export class ToolHandlers {
     this.progressEngine = new ProgressEngine(this.context.index);
     this.episodeEngine = new EpisodeEngine(this.context.memgraph);
     this.coordinationEngine = new CoordinationEngine(this.context.memgraph);
+    this.communityDetector = new CommunityDetector(this.context.memgraph);
 
     // Initialize GraphOrchestrator if not provided
     this.orchestrator =
@@ -495,12 +498,16 @@ export class ToolHandlers {
       limit = 100,
       profile = "compact",
       asOf,
+      mode = "local",
     } = args;
 
     try {
       let result;
       const { projectId, workspaceRoot } = this.getActiveProjectContext();
       const asOfTs = this.toEpochMillis(asOf);
+      const queryMode =
+        mode === "global" || mode === "hybrid" ? mode : "local";
+
       if (language === "cypher") {
         if (asOfTs) {
           return this.errorEnvelope(
@@ -513,12 +520,43 @@ export class ToolHandlers {
 
         result = await this.context.memgraph.executeCypher(query);
       } else {
-        const cypher = this.routeNaturalToCypher(query, projectId);
-        if (asOfTs) {
-          const temporalCypher = `MATCH (n) WHERE n.projectId = '${projectId}' AND n.validFrom <= ${asOfTs} AND (n.validTo IS NULL OR n.validTo > ${asOfTs}) RETURN labels(n)[0] as type, count(n) as count ORDER BY count DESC`;
-          result = await this.context.memgraph.executeCypher(temporalCypher);
+        if (queryMode === "global" || queryMode === "hybrid") {
+          const globalRows = await this.fetchGlobalCommunityRows(
+            query,
+            projectId,
+            limit,
+          );
+
+          if (queryMode === "global") {
+            result = { data: globalRows };
+          } else {
+            const localCypher = this.routeNaturalToCypher(query, projectId);
+            const localResult = asOfTs
+              ? await this.context.memgraph.executeCypher(
+                  `MATCH (n) WHERE n.projectId = '${projectId}' AND n.validFrom <= ${asOfTs} AND (n.validTo IS NULL OR n.validTo > ${asOfTs}) RETURN labels(n)[0] as type, count(n) as count ORDER BY count DESC`,
+                )
+              : await this.context.memgraph.executeCypher(localCypher);
+            result = {
+              data: [
+                {
+                  section: "global",
+                  communities: globalRows,
+                },
+                {
+                  section: "local",
+                  results: localResult.data,
+                },
+              ],
+            };
+          }
         } else {
-          result = await this.context.memgraph.executeCypher(cypher);
+          const cypher = this.routeNaturalToCypher(query, projectId);
+          if (asOfTs) {
+            const temporalCypher = `MATCH (n) WHERE n.projectId = '${projectId}' AND n.validFrom <= ${asOfTs} AND (n.validTo IS NULL OR n.validTo > ${asOfTs}) RETURN labels(n)[0] as type, count(n) as count ORDER BY count DESC`;
+            result = await this.context.memgraph.executeCypher(temporalCypher);
+          } else {
+            result = await this.context.memgraph.executeCypher(cypher);
+          }
         }
       }
 
@@ -536,6 +574,7 @@ export class ToolHandlers {
         {
           intent:
             language === "natural" ? this.classifyIntent(query) : "cypher",
+          mode: queryMode,
           projectId,
           workspaceRoot,
           asOf: asOfTs,
@@ -549,6 +588,54 @@ export class ToolHandlers {
     } catch (error) {
       return this.errorEnvelope("GRAPH_QUERY_EXCEPTION", String(error), true);
     }
+  }
+
+  private async fetchGlobalCommunityRows(
+    query: string,
+    projectId: string,
+    limit: number,
+  ): Promise<any[]> {
+    const keywordHint = query
+      .toLowerCase()
+      .split(/[^a-z0-9_]+/)
+      .find((token) => token.length >= 4);
+
+    const params: Record<string, unknown> = {
+      projectId,
+      limit,
+      keywordHint: keywordHint || null,
+      labels: this.deriveLabelHints(query),
+    };
+
+    const scoped = await this.context.memgraph.executeCypher(
+      `MATCH (c:COMMUNITY {projectId: $projectId})
+       WHERE ($keywordHint IS NOT NULL AND toLower(c.summary) CONTAINS $keywordHint)
+          OR toLower(c.label) IN $labels
+       RETURN c.id AS id, c.label AS label, c.summary AS summary, c.memberCount AS memberCount
+       ORDER BY c.memberCount DESC
+       LIMIT $limit`,
+      params,
+    );
+
+    if (scoped.data.length > 0) {
+      return scoped.data;
+    }
+
+    const fallback = await this.context.memgraph.executeCypher(
+      `MATCH (c:COMMUNITY {projectId: $projectId})
+       RETURN c.id AS id, c.label AS label, c.summary AS summary, c.memberCount AS memberCount
+       ORDER BY c.memberCount DESC
+       LIMIT $limit`,
+      { projectId, limit },
+    );
+
+    return fallback.data;
+  }
+
+  private deriveLabelHints(query: string): string[] {
+    const raw = query.toLowerCase();
+    const hints = ["tools", "engines", "graph", "parsers", "vector", "config"];
+    return hints.filter((hint) => raw.includes(hint));
   }
 
   async code_explain(args: any): Promise<string> {
@@ -1250,6 +1337,13 @@ export class ToolHandlers {
           if (invalidated > 0) {
             console.error(
               `[coordination] Invalidated ${invalidated} stale claim(s) post-rebuild for project ${projectId}`,
+            );
+          }
+
+          if (mode === "full") {
+            const communityRun = await this.communityDetector!.run(projectId);
+            console.error(
+              `[community] computed ${communityRun.communities} communities across ${communityRun.members} member node(s) for project ${projectId}`,
             );
           }
         })

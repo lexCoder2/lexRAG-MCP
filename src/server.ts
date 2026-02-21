@@ -82,6 +82,10 @@ function createMcpServerInstance(): McpServer {
           .enum(["cypher", "natural"])
           .default("natural")
           .describe("Query language"),
+        mode: z
+          .enum(["local", "global", "hybrid"])
+          .default("local")
+          .describe("Query mode for natural language"),
         limit: z.number().default(100).describe("Result limit"),
         asOf: z
           .string()
