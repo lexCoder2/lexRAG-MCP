@@ -144,23 +144,7 @@ Workspace context is session-scoped.
 
 ### MCP session flow diagram
 
-```mermaid
-sequenceDiagram
-  participant Client
-  participant Server as MCP HTTP Server
-
-  Client->>Server: initialize
-  Server-->>Client: mcp-session-id (header)
-
-  Client->>Server: graph_set_workspace (with mcp-session-id)
-  Server-->>Client: workspace context set
-
-  Client->>Server: graph_rebuild (with mcp-session-id)
-  Server-->>Client: QUEUED
-
-  Client->>Server: graph_query / graph_health
-  Server-->>Client: shaped response (compact/balanced/debug)
-```
+![MCP HTTP Session Flow](docs/diagrams/mcp-session-flow.svg)
 
 Example:
 
