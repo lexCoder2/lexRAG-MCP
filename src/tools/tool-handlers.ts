@@ -19,6 +19,7 @@ import type { ResponseProfile } from "../response/budget.js";
 import { estimateTokens, makeBudget } from "../response/budget.js";
 import { ToolHandlerBase, type ToolContext } from "./tool-handler-base.js";
 import { createRefTools } from "./handlers/ref-tools.js";
+import { createArchTools } from "./handlers/arch-tools.js";
 
 // Re-export base types for external consumers
 export type { ToolContext, ProjectContext } from "./tool-handler-base.js";
@@ -38,6 +39,7 @@ export class ToolHandlers extends ToolHandlerBase {
     super(context);
     // Initialize domain-specific tool handlers (Phase 5)
     this.initializeRefTools();
+    this.initializeArchTools();
   }
 
   /**
@@ -46,6 +48,15 @@ export class ToolHandlers extends ToolHandlerBase {
   private initializeRefTools(): void {
     const refTools = createRefTools(this as any);
     (this as any).ref_query = refTools.ref_query.bind(this);
+  }
+
+  /**
+   * Initialize architecture validation tools from dedicated module
+   */
+  private initializeArchTools(): void {
+    const archTools = createArchTools(this as any);
+    (this as any).arch_validate = archTools.arch_validate.bind(this);
+    (this as any).arch_suggest = archTools.arch_suggest.bind(this);
   }
 
   async graph_query(args: any): Promise<string> {
@@ -335,80 +346,6 @@ export class ToolHandlers extends ToolHandlerBase {
 
   // ============================================================================
   // ARCHITECTURE TOOLS (2)
-  // ============================================================================
-
-  async arch_validate(args: any): Promise<string> {
-    const { files, strict = false, profile = "compact" } = args;
-
-    if (!this.archEngine) {
-      return this.errorEnvelope(
-        "ARCH_ENGINE_UNAVAILABLE",
-        "Architecture engine not initialized",
-        true,
-      );
-    }
-
-    try {
-      const result = await this.archEngine.validate(files);
-
-      const output = {
-        success: result.success,
-        violations: result.violations.slice(0, 20), // Top 20 violations
-        statistics: result.statistics,
-        severity: strict ? "error" : "warning",
-      };
-
-      return this.formatSuccess(output, profile);
-    } catch (error) {
-      return this.errorEnvelope("ARCH_VALIDATE_FAILED", String(error), true);
-    }
-  }
-
-  async arch_suggest(args: any): Promise<string> {
-    const { name, type, dependencies = [], profile = "compact" } = args;
-
-    if (!this.archEngine) {
-      return this.errorEnvelope(
-        "ARCH_ENGINE_UNAVAILABLE",
-        "Architecture engine not initialized",
-        true,
-      );
-    }
-
-    try {
-      const suggestion = this.archEngine.getSuggestion(
-        name,
-        type,
-        dependencies,
-      );
-
-      if (!suggestion) {
-        return this.formatSuccess(
-          {
-            success: false,
-            message: "No suitable layer found for this code",
-            reason: `No layer can import from all dependencies: ${dependencies.join(", ")}`,
-          },
-          profile,
-        );
-      }
-
-      return this.formatSuccess(
-        {
-          success: true,
-          suggestedLayer: suggestion.suggestedLayer,
-          suggestedPath: suggestion.suggestedPath,
-          reasoning: suggestion.reasoning,
-        },
-        profile,
-      );
-    } catch (error) {
-      return this.errorEnvelope("ARCH_SUGGEST_FAILED", String(error), true);
-    }
-  }
-
-  // ============================================================================
-  // TEST INTELLIGENCE TOOLS (4)
   // ============================================================================
 
   async test_select(args: any): Promise<string> {
