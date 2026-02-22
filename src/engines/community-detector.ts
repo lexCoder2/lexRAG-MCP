@@ -75,7 +75,11 @@ export default class CommunityDetector {
         { projectId },
       );
 
-      if (response.error || !Array.isArray(response.data) || response.data.length === 0) {
+      if (
+        response.error ||
+        !Array.isArray(response.data) ||
+        response.data.length === 0
+      ) {
         return null;
       }
 
@@ -104,7 +108,11 @@ export default class CommunityDetector {
       console.error(
         `[community] MAGE Leiden: ${grouped.size} communities across ${communityMap.size} member node(s) for project ${projectId}`,
       );
-      return { communities: grouped.size, members: communityMap.size, mode: "mage_leiden" };
+      return {
+        communities: grouped.size,
+        members: communityMap.size,
+        mode: "mage_leiden",
+      };
     } catch {
       // MAGE module not installed or unsupported Memgraph edition — fall through
       return null;
@@ -137,7 +145,11 @@ export default class CommunityDetector {
     console.error(
       `[community] directory heuristic: ${grouped.size} communities across ${members.length} member node(s) for project ${projectId}`,
     );
-    return { communities: grouped.size, members: members.length, mode: "directory_heuristic" };
+    return {
+      communities: grouped.size,
+      members: members.length,
+      mode: "directory_heuristic",
+    };
   }
 
   /**

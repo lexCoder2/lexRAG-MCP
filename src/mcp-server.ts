@@ -15,6 +15,7 @@ import {
   Tool,
   Resource,
 } from "@modelcontextprotocol/sdk/types.js";
+import { StdioServerTransport } from "@modelcontextprotocol/sdk/server/stdio.js";
 import MemgraphClient from "./graph/client.js";
 import GraphIndexManager from "./graph/index.js";
 import ToolHandlers from "./tools/tool-handlers.js";
@@ -753,7 +754,8 @@ export class MCPServer {
     const transport = process.env.MCP_TRANSPORT || "stdio";
 
     if (transport === "stdio") {
-      this.server.connect(process.stdin, process.stdout);
+      const stdioTransport = new StdioServerTransport();
+      await this.server.connect(stdioTransport);
     } else if (transport === "http") {
       // HTTP transport could be added in future
       console.log("[MCPServer] HTTP transport not yet implemented");

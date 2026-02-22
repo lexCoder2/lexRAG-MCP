@@ -95,8 +95,7 @@ export class GraphOrchestrator {
       if (tsAvailability.tsx) {
         this.tsTsxParser = getTreeSitterTSXParser();
       }
-      this.useTsTreeSitter =
-        tsAvailability.typescript || tsAvailability.tsx;
+      this.useTsTreeSitter = tsAvailability.typescript || tsAvailability.tsx;
     }
 
     // ── Tree-sitter JavaScript / JSX ───────────────────────────────────────
@@ -118,7 +117,12 @@ export class GraphOrchestrator {
     // regex parsers when the native binding is unavailable.
     const tsParsers = getTreeSitterParsers();
     const availability = checkTreeSitterAvailability();
-    const regexFallbacks = [new PythonParser(), new GoParser(), new RustParser(), new JavaParser()];
+    const regexFallbacks = [
+      new PythonParser(),
+      new GoParser(),
+      new RustParser(),
+      new JavaParser(),
+    ];
 
     const tsByLang = new Map(tsParsers.map((p) => [p.language, p]));
     for (const fallback of regexFallbacks) {
@@ -149,7 +153,9 @@ export class GraphOrchestrator {
       else allFallback.push(lang);
     }
     if (allAvailable.length > 0) {
-      console.error(`[parsers] tree-sitter active for: ${allAvailable.join(", ")}`);
+      console.error(
+        `[parsers] tree-sitter active for: ${allAvailable.join(", ")}`,
+      );
     }
     if (allFallback.length > 0) {
       console.error(
@@ -461,7 +467,9 @@ export class GraphOrchestrator {
           ? path.normalize(entry)
           : path.resolve(workspaceRoot, entry),
       )
-      .filter((filePath) => /\.(ts|tsx|js|jsx|mjs|cjs|py|go|rs|java)$/.test(filePath));
+      .filter((filePath) =>
+        /\.(ts|tsx|js|jsx|mjs|cjs|py|go|rs|java)$/.test(filePath),
+      );
   }
 
   private async parseSourceFile(
@@ -472,12 +480,18 @@ export class GraphOrchestrator {
     if (extension === ".ts" || extension === ".tsx") {
       // Prefer tree-sitter when available and opted in
       if (this.useTsTreeSitter) {
-        const tsParser = extension === ".tsx" ? this.tsTsxParser : this.tsTsParser;
+        const tsParser =
+          extension === ".tsx" ? this.tsTsxParser : this.tsTsParser;
         if (tsParser?.isAvailable) {
           const content = fs.readFileSync(filePath, "utf-8");
           const result = await tsParser.parse(filePath, content);
           if (result.symbols.length > 0) {
-            return this.adaptLanguageParseResult(filePath, workspaceRoot, content, result);
+            return this.adaptLanguageParseResult(
+              filePath,
+              workspaceRoot,
+              content,
+              result,
+            );
           }
         }
       }
@@ -491,12 +505,18 @@ export class GraphOrchestrator {
       extension === ".cjs"
     ) {
       if (this.useJsTreeSitter) {
-        const jsParser = extension === ".jsx" ? this.tsJsxParser : this.tsJsParser;
+        const jsParser =
+          extension === ".jsx" ? this.tsJsxParser : this.tsJsParser;
         if (jsParser?.isAvailable) {
           const content = fs.readFileSync(filePath, "utf-8");
           const result = await jsParser.parse(filePath, content);
           if (result.symbols.length > 0) {
-            return this.adaptLanguageParseResult(filePath, workspaceRoot, content, result);
+            return this.adaptLanguageParseResult(
+              filePath,
+              workspaceRoot,
+              content,
+              result,
+            );
           }
         }
       }
@@ -620,7 +640,9 @@ export class GraphOrchestrator {
         id: `${relativePath}:function:${symbol.name}:${index}`,
         name: symbol.name,
         // Preserve kind from symbol ("arrow", "method", etc.) when present
-        kind: (symbol.kind as "function" | "arrow" | "method" | undefined) ?? ("function" as const),
+        kind:
+          (symbol.kind as "function" | "arrow" | "method" | undefined) ??
+          ("function" as const),
         startLine: symbol.startLine,
         endLine: symbol.endLine,
         LOC: Math.max(1, symbol.endLine - symbol.startLine + 1),

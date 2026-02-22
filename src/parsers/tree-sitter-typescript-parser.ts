@@ -128,7 +128,10 @@ function extractSymbols(root: TSNode): ParsedSymbol[] {
         symbols.push({
           type: "function",
           name: nameNode.text,
-          kind: node.type === "generator_function_declaration" ? "generator" : undefined,
+          kind:
+            node.type === "generator_function_declaration"
+              ? "generator"
+              : undefined,
           startLine: node.startPosition.row + 1,
           endLine: node.endPosition.row + 1,
           scopePath: scope[scope.length - 1],
@@ -303,7 +306,11 @@ abstract class TSDialectParser implements LanguageParser {
 
   async parse(filePath: string, content: string): Promise<ParseResult> {
     if (!this.init() || !this._parser) {
-      return { file: path.basename(filePath), language: this.language, symbols: [] };
+      return {
+        file: path.basename(filePath),
+        language: this.language,
+        symbols: [],
+      };
     }
     try {
       const tree = this._parser.parse(content);
@@ -313,7 +320,11 @@ abstract class TSDialectParser implements LanguageParser {
         symbols: extractSymbols(tree.rootNode),
       };
     } catch {
-      return { file: path.basename(filePath), language: this.language, symbols: [] };
+      return {
+        file: path.basename(filePath),
+        language: this.language,
+        symbols: [],
+      };
     }
   }
 }
@@ -354,7 +365,10 @@ export function getTreeSitterTSXParser(): TreeSitterTSXParser {
 }
 
 /** Check whether tree-sitter TypeScript / TSX grammars are loadable. */
-export function checkTsTreeSitterAvailability(): { typescript: boolean; tsx: boolean } {
+export function checkTsTreeSitterAvailability(): {
+  typescript: boolean;
+  tsx: boolean;
+} {
   return {
     typescript: getTreeSitterTypeScriptParser().isAvailable,
     tsx: getTreeSitterTSXParser().isAvailable,
@@ -402,7 +416,11 @@ abstract class JSDialectParser implements LanguageParser {
 
   async parse(filePath: string, content: string): Promise<ParseResult> {
     if (!this.init() || !this._parser) {
-      return { file: path.basename(filePath), language: this.language, symbols: [] };
+      return {
+        file: path.basename(filePath),
+        language: this.language,
+        symbols: [],
+      };
     }
     try {
       const tree = this._parser.parse(content);
@@ -413,7 +431,11 @@ abstract class JSDialectParser implements LanguageParser {
         symbols: extractSymbols(tree.rootNode),
       };
     } catch {
-      return { file: path.basename(filePath), language: this.language, symbols: [] };
+      return {
+        file: path.basename(filePath),
+        language: this.language,
+        symbols: [],
+      };
     }
   }
 }
@@ -443,7 +465,10 @@ export function getTreeSitterJSXParser(): TreeSitterJSXParser {
 }
 
 /** Check whether tree-sitter JavaScript / JSX grammar is loadable. */
-export function checkJsTreeSitterAvailability(): { javascript: boolean; jsx: boolean } {
+export function checkJsTreeSitterAvailability(): {
+  javascript: boolean;
+  jsx: boolean;
+} {
   // Both parsers share the same grammar — one check suffices
   const available = getTreeSitterJavaScriptParser().isAvailable;
   return { javascript: available, jsx: available };

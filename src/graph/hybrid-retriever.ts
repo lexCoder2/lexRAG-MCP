@@ -158,7 +158,11 @@ export class HybridRetriever {
     error?: string;
   }> {
     if (!this.memgraph) {
-      return { created: false, alreadyExists: false, error: "no_memgraph_connection" };
+      return {
+        created: false,
+        alreadyExists: false,
+        error: "no_memgraph_connection",
+      };
     }
     try {
       const check = await this.memgraph.executeCypher(

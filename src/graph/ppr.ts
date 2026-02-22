@@ -49,7 +49,13 @@ export async function runPPR(
   const damping = Number.isFinite(opts.damping) ? Number(opts.damping) : 0.85;
   const iterations = Math.max(1, Math.min(opts.iterations || 20, 100));
 
-  const mageResult = await tryMagePPR(opts, client, seedIds, maxResults, damping);
+  const mageResult = await tryMagePPR(
+    opts,
+    client,
+    seedIds,
+    maxResults,
+    damping,
+  );
   if (mageResult) return mageResult;
 
   return runJsPPR(opts, client, seedIds, maxResults, damping, iterations);
@@ -89,7 +95,10 @@ async function tryMagePPR(
     }
 
     const prestige = new Map<string, number>();
-    const nodeMeta = new Map<string, { type: string; filePath: string; name: string }>();
+    const nodeMeta = new Map<
+      string,
+      { type: string; filePath: string; name: string }
+    >();
     for (const row of pagerankRes.data) {
       const id = String(row.nodeId || "");
       if (!id) continue;
@@ -180,7 +189,10 @@ async function runJsPPR(
   );
 
   const nodes = new Set<string>(seedIds);
-  const nodeMeta = new Map<string, { type: string; filePath: string; name: string }>();
+  const nodeMeta = new Map<
+    string,
+    { type: string; filePath: string; name: string }
+  >();
   const outgoing = new Map<string, Array<{ to: string; weight: number }>>();
 
   for (const row of edgeResult.data || []) {
@@ -258,7 +270,11 @@ async function runJsPPR(
 
   return nodeList
     .map((nodeId) => {
-      const meta = nodeMeta.get(nodeId) || { type: "UNKNOWN", filePath: "", name: nodeId };
+      const meta = nodeMeta.get(nodeId) || {
+        type: "UNKNOWN",
+        filePath: "",
+        name: nodeId,
+      };
       return {
         nodeId,
         score: Number((rank.get(nodeId) || 0).toFixed(6)),
@@ -271,4 +287,3 @@ async function runJsPPR(
     .sort((a, b) => b.score - a.score)
     .slice(0, maxResults);
 }
-

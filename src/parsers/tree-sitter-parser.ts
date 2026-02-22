@@ -39,7 +39,8 @@ function tryRequire(name: string): unknown {
  */
 function resolveLanguage(mod: unknown): unknown {
   if (!mod) return null;
-  if (typeof (mod as any).language !== "undefined") return (mod as any).language;
+  if (typeof (mod as any).language !== "undefined")
+    return (mod as any).language;
   return mod;
 }
 
@@ -118,19 +119,34 @@ abstract class TreeSitterParser implements LanguageParser {
   async parse(filePath: string, content: string): Promise<ParseResult> {
     if (!this.initParser() || !this._parser) {
       // Tree-sitter not available — return empty result; caller uses regex fallback
-      return { file: path.basename(filePath), language: this.language, symbols: [] };
+      return {
+        file: path.basename(filePath),
+        language: this.language,
+        symbols: [],
+      };
     }
 
     try {
       const tree = this._parser.parse(content);
       const symbols = this.extractSymbols(tree.rootNode, content);
-      return { file: path.basename(filePath), language: this.language, symbols };
+      return {
+        file: path.basename(filePath),
+        language: this.language,
+        symbols,
+      };
     } catch {
-      return { file: path.basename(filePath), language: this.language, symbols: [] };
+      return {
+        file: path.basename(filePath),
+        language: this.language,
+        symbols: [],
+      };
     }
   }
 
-  protected abstract extractSymbols(root: TSNode, source: string): ParsedSymbol[];
+  protected abstract extractSymbols(
+    root: TSNode,
+    source: string,
+  ): ParsedSymbol[];
 
   /** Helper: find all descendants matching a set of node types. */
   protected findAll(root: TSNode, types: Set<string>): TSNode[] {
@@ -181,10 +197,21 @@ export class TreeSitterPythonParser extends TreeSitterParser {
         case "import_statement": {
           // import foo, bar
           walk(node, (child) => {
-            if (child.type === "dotted_name" || child.type === "aliased_import") {
+            if (
+              child.type === "dotted_name" ||
+              child.type === "aliased_import"
+            ) {
               const name = child.childForFieldName("name")?.text ?? child.text;
-              if (name && !symbols.some((s) => s.name === name && s.type === "import")) {
-                symbols.push({ type: "import", name, startLine: node.startPosition.row + 1, endLine: node.startPosition.row + 1 });
+              if (
+                name &&
+                !symbols.some((s) => s.name === name && s.type === "import")
+              ) {
+                symbols.push({
+                  type: "import",
+                  name,
+                  startLine: node.startPosition.row + 1,
+                  endLine: node.startPosition.row + 1,
+                });
               }
             }
           });
@@ -193,7 +220,12 @@ export class TreeSitterPythonParser extends TreeSitterParser {
         case "import_from_statement": {
           const mod = fieldText(node, "module_name");
           if (mod) {
-            symbols.push({ type: "import", name: mod, startLine: node.startPosition.row + 1, endLine: node.startPosition.row + 1 });
+            symbols.push({
+              type: "import",
+              name: mod,
+              startLine: node.startPosition.row + 1,
+              endLine: node.startPosition.row + 1,
+            });
           }
           break;
         }
@@ -235,8 +267,7 @@ export class TreeSitterGoParser extends TreeSitterParser {
           const typeNode = node.childForFieldName("type");
           if (!nameNode) break;
           const kind = typeNode?.type;
-          const symType =
-            kind === "interface_type" ? "interface" : "class";
+          const symType = kind === "interface_type" ? "interface" : "class";
           symbols.push({
             type: symType,
             name: nameNode.text,
@@ -251,7 +282,12 @@ export class TreeSitterGoParser extends TreeSitterParser {
           const raw = pathNode?.text ?? "";
           const name = raw.replace(/^"|"$/g, "");
           if (name) {
-            symbols.push({ type: "import", name, startLine: node.startPosition.row + 1, endLine: node.startPosition.row + 1 });
+            symbols.push({
+              type: "import",
+              name,
+              startLine: node.startPosition.row + 1,
+              endLine: node.startPosition.row + 1,
+            });
           }
           break;
         }
@@ -313,9 +349,14 @@ export class TreeSitterRustParser extends TreeSitterParser {
           // Grab the path identifier up to the last segment
           const arg = node.namedChild(0);
           if (arg) {
-            const name = arg.text.replace(/::.*$/, "").replace(/^::/,"");
+            const name = arg.text.replace(/::.*$/, "").replace(/^::/, "");
             if (name) {
-              symbols.push({ type: "import", name, startLine: node.startPosition.row + 1, endLine: node.startPosition.row + 1 });
+              symbols.push({
+                type: "import",
+                name,
+                startLine: node.startPosition.row + 1,
+                endLine: node.startPosition.row + 1,
+              });
             }
           }
           break;
@@ -336,7 +377,13 @@ export class TreeSitterJavaParser extends TreeSitterParser {
   protected readonly grammarPkg = "tree-sitter-java";
 
   private static readonly RESERVED = new Set([
-    "if", "for", "while", "switch", "catch", "try", "else",
+    "if",
+    "for",
+    "while",
+    "switch",
+    "catch",
+    "try",
+    "else",
   ]);
 
   protected extractSymbols(root: TSNode, _source: string): ParsedSymbol[] {
@@ -378,7 +425,12 @@ export class TreeSitterJavaParser extends TreeSitterParser {
             .replace(/;$/, "")
             .trim();
           if (name) {
-            symbols.push({ type: "import", name, startLine: node.startPosition.row + 1, endLine: node.startPosition.row + 1 });
+            symbols.push({
+              type: "import",
+              name,
+              startLine: node.startPosition.row + 1,
+              endLine: node.startPosition.row + 1,
+            });
           }
           break;
         }

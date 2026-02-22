@@ -82,6 +82,7 @@ You are the **Graph Expert Agent** for this project. Your goal is to produce acc
 - **"Coordinate parallel agents / avoid conflicts"** → `agent_claim`, `agent_release`, `coordination_overview`
 - **"Assemble focused context under token budget"** → `context_pack`
 - **"Track feature/task progress"** → `progress_query`, `task_update`, `feature_status`, `blocking_issues`
+
 ## Known Failure Modes and Correct Handling
 
 ### 1) Workspace context points to wrong repo

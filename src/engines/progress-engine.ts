@@ -127,7 +127,7 @@ export class ProgressEngine {
       status?: string;
       assignee?: string;
       featureId?: string;
-    }
+    },
   ): ProgressQueryResult {
     const items: (Feature | Task)[] = [];
 
@@ -186,7 +186,7 @@ export class ProgressEngine {
 
     // Get tasks for this feature
     const tasks = Array.from(this.tasks.values()).filter(
-      (t) => t.featureId === featureId
+      (t) => t.featureId === featureId,
     );
 
     // Get implementing files (linked via IMPLEMENTS relationship in graph)
@@ -276,7 +276,7 @@ export class ProgressEngine {
    */
   getBlockingIssues(type?: "all" | "critical" | "features" | "tests"): Task[] {
     const blocked = Array.from(this.tasks.values()).filter(
-      (t) => t.status === "blocked"
+      (t) => t.status === "blocked",
     );
 
     if (type === "critical") {
@@ -316,7 +316,10 @@ export class ProgressEngine {
           },
         );
       } catch (err) {
-        console.error("[ProgressEngine] createFeature Memgraph write failed:", err);
+        console.error(
+          "[ProgressEngine] createFeature Memgraph write failed:",
+          err,
+        );
       }
     }
     return feature;
@@ -342,7 +345,10 @@ export class ProgressEngine {
           },
         );
       } catch (err) {
-        console.error("[ProgressEngine] createTask Memgraph write failed:", err);
+        console.error(
+          "[ProgressEngine] createTask Memgraph write failed:",
+          err,
+        );
       }
     }
     return task;
@@ -353,7 +359,7 @@ export class ProgressEngine {
    */
   async persistTaskUpdate(
     taskId: string,
-    updates: Partial<Task>
+    updates: Partial<Task>,
   ): Promise<boolean> {
     if (!this.memgraph || !this.memgraph.isConnected()) {
       return false;
@@ -380,7 +386,7 @@ export class ProgressEngine {
 
       const result = await this.memgraph.executeCypher(
         statement.query,
-        statement.params
+        statement.params,
       );
       return !result.error;
     } catch (error) {
@@ -394,7 +400,7 @@ export class ProgressEngine {
    */
   async persistFeatureUpdate(
     featureId: string,
-    updates: Partial<Feature>
+    updates: Partial<Feature>,
   ): Promise<boolean> {
     if (!this.memgraph || !this.memgraph.isConnected()) {
       return false;
@@ -421,11 +427,14 @@ export class ProgressEngine {
 
       const result = await this.memgraph.executeCypher(
         statement.query,
-        statement.params
+        statement.params,
       );
       return !result.error;
     } catch (error) {
-      console.error("[ProgressEngine] Failed to persist feature update:", error);
+      console.error(
+        "[ProgressEngine] Failed to persist feature update:",
+        error,
+      );
       return false;
     }
   }
@@ -441,19 +450,19 @@ export class ProgressEngine {
         statistics: {
           totalFeatures: this.features.size,
           completedFeatures: Array.from(this.features.values()).filter(
-            (f) => f.status === "completed"
+            (f) => f.status === "completed",
           ).length,
           totalTasks: this.tasks.size,
           completedTasks: Array.from(this.tasks.values()).filter(
-            (t) => t.status === "completed"
+            (t) => t.status === "completed",
           ).length,
           blockedTasks: Array.from(this.tasks.values()).filter(
-            (t) => t.status === "blocked"
+            (t) => t.status === "blocked",
           ).length,
         },
       },
       null,
-      2
+      2,
     );
   }
 }

@@ -101,12 +101,12 @@ docker-compose exec memgraph memgraph-cli --exec "MATCH (f:FILE) RETURN count(f)
 
 ## Troubleshooting
 
-| Problem | Solution |
-|---------|---------|
-| `400` from MCP | Missing or stale `mcp-session-id`; re-send `initialize` |
-| Empty query results | Call `graph_rebuild`, wait 10–15 s, then retry |
-| `Connection refused` | Check `docker-compose ps`; ensure Memgraph on port 7687 |
-| Build fails | Run `npm run build` and check TypeScript errors |
+| Problem                | Solution                                                     |
+| ---------------------- | ------------------------------------------------------------ |
+| `400` from MCP         | Missing or stale `mcp-session-id`; re-send `initialize`      |
+| Empty query results    | Call `graph_rebuild`, wait 10–15 s, then retry               |
+| `Connection refused`   | Check `docker-compose ps`; ensure Memgraph on port 7687      |
+| Build fails            | Run `npm run build` and check TypeScript errors              |
 | Tree-sitter not active | Set `CODE_GRAPH_USE_TREE_SITTER=true` before starting server |
 
 ## Next Steps
@@ -118,9 +118,9 @@ docker-compose exec memgraph memgraph-cli --exec "MATCH (f:FILE) RETURN count(f)
 
 ## Total Setup Time: ~5 minutes
 
-| Step | Time |
-|------|------|
-| Docker startup | ~30 s |
-| `npm install && npm run build` | ~1 min |
-| Graph index (medium repo) | 5–30 s |
-| First query | immediate |
+| Step                           | Time      |
+| ------------------------------ | --------- |
+| Docker startup                 | ~30 s     |
+| `npm install && npm run build` | ~1 min    |
+| Graph index (medium repo)      | 5–30 s    |
+| First query                    | immediate |

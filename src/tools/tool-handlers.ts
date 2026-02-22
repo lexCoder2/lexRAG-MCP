@@ -300,7 +300,10 @@ export class ToolHandlers {
     }
 
     this.testEngine = new TestEngine(this.context.index);
-    this.progressEngine = new ProgressEngine(this.context.index, this.context.memgraph);
+    this.progressEngine = new ProgressEngine(
+      this.context.index,
+      this.context.memgraph,
+    );
     this.episodeEngine = new EpisodeEngine(this.context.memgraph);
     this.coordinationEngine = new CoordinationEngine(this.context.memgraph);
     this.communityDetector = new CommunityDetector(this.context.memgraph);
@@ -1826,7 +1829,7 @@ export class ToolHandlers {
             mode: this.hybridRetriever?.bm25Mode ?? "not_initialized",
           },
           summarizer: {
-            configured: !!(process.env.CODE_GRAPH_SUMMARIZER_URL),
+            configured: !!process.env.CODE_GRAPH_SUMMARIZER_URL,
             endpoint: process.env.CODE_GRAPH_SUMMARIZER_URL
               ? "[configured]"
               : null,

@@ -371,11 +371,7 @@ export class GraphBuilder {
         endLine: cls.endLine || cls.line,
         LOC: cls.LOC || 1,
         summary: cls.summary || null,
-        scipId: this.toScipId(
-          "class",
-          parsedFile.relativePath || "",
-          cls.name,
-        ),
+        scipId: this.toScipId("class", parsedFile.relativePath || "", cls.name),
         validFrom: this.txTimestamp,
         validTo: null,
         createdAt: this.txTimestamp,

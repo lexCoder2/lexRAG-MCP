@@ -8,11 +8,11 @@ Code Graph Server is a production MCP server that turns any repository into a qu
 
 Two server entry points exist — both production-ready:
 
-| File | Transport | Use case |
-|------|-----------|---------|
-| `src/server.ts` | MCP HTTP (Streamable HTTP) | Production — multi-client, multi-session |
-| `src/mcp-server.ts` | stdio | Editor integrations (single client) |
-| `src/index.ts` | stdio (legacy) | Backward compat only |
+| File                | Transport                  | Use case                                 |
+| ------------------- | -------------------------- | ---------------------------------------- |
+| `src/server.ts`     | MCP HTTP (Streamable HTTP) | Production — multi-client, multi-session |
+| `src/mcp-server.ts` | stdio                      | Editor integrations (single client)      |
+| `src/index.ts`      | stdio (legacy)             | Backward compat only                     |
 
 **Recommended**: `src/server.ts` via `npm run start:http` for agent fleets; stdio entry (`src/mcp-server.ts`) for local editor use.
 
@@ -50,16 +50,17 @@ Two server entry points exist — both production-ready:
 
 Node labels and key properties:
 
-| Label | Key properties |
-|-------|---------------|
-| `FILE` | `path`, `language`, `projectId`, `scipId`, `checksum` |
+| Label      | Key properties                                                                 |
+| ---------- | ------------------------------------------------------------------------------ |
+| `FILE`     | `path`, `language`, `projectId`, `scipId`, `checksum`                          |
 | `FUNCTION` | `name`, `startLine`, `endLine`, `language`, `projectId`, `scipId`, `scopePath` |
-| `CLASS` | `name`, `startLine`, `endLine`, `language`, `projectId`, `scipId` |
-| `IMPORT` | `source`, `symbols[]` |
-| `EPISODE` | `type`, `content`, `agentId`, `taskId`, `timestamp`, `projectId` |
-| `CLAIM` | `agentId`, `taskName`, `claimedAt`, `projectId` |
+| `CLASS`    | `name`, `startLine`, `endLine`, `language`, `projectId`, `scipId`              |
+| `IMPORT`   | `source`, `symbols[]`                                                          |
+| `EPISODE`  | `type`, `content`, `agentId`, `taskId`, `timestamp`, `projectId`               |
+| `CLAIM`    | `agentId`, `taskName`, `claimedAt`, `projectId`                                |
 
 **SCIP IDs** (`scipId` field added to all code nodes):
+
 - File: `src/tools/tool-handlers.ts`
 - Function: `src/tools/tool-handlers.ts::callTool()`
 - Method: `src/tools/tool-handlers.ts::ToolHandlers#arch_suggest()`
@@ -73,16 +74,16 @@ Parsing is handled in `src/graph/orchestrator.ts` which dispatches to the approp
 
 ### Parser registry
 
-| Language | Extensions | Parser (default) | Parser (tree-sitter, `CODE_GRAPH_USE_TREE_SITTER=true`) |
-|----------|-----------|-----------------|--------------------------------------------------------|
-| TypeScript | `.ts` | regex (typescript-parser.ts) | `TreeSitterTypeScriptParser` |
-| TSX | `.tsx` | regex fallback | `TreeSitterTSXParser` |
-| JavaScript | `.js`, `.mjs`, `.cjs` | FILE node only | `TreeSitterJavaScriptParser` |
-| JSX | `.jsx` | FILE node only | `TreeSitterJSXParser` |
-| Python | `.py` | regex | `TreeSitterPythonParser` |
-| Go | `.go` | regex | `TreeSitterGoParser` |
-| Rust | `.rs` | regex | `TreeSitterRustParser` |
-| Java | `.java` | regex | `TreeSitterJavaParser` |
+| Language   | Extensions            | Parser (default)             | Parser (tree-sitter, `CODE_GRAPH_USE_TREE_SITTER=true`) |
+| ---------- | --------------------- | ---------------------------- | ------------------------------------------------------- |
+| TypeScript | `.ts`                 | regex (typescript-parser.ts) | `TreeSitterTypeScriptParser`                            |
+| TSX        | `.tsx`                | regex fallback               | `TreeSitterTSXParser`                                   |
+| JavaScript | `.js`, `.mjs`, `.cjs` | FILE node only               | `TreeSitterJavaScriptParser`                            |
+| JSX        | `.jsx`                | FILE node only               | `TreeSitterJSXParser`                                   |
+| Python     | `.py`                 | regex                        | `TreeSitterPythonParser`                                |
+| Go         | `.go`                 | regex                        | `TreeSitterGoParser`                                    |
+| Rust       | `.rs`                 | regex                        | `TreeSitterRustParser`                                  |
+| Java       | `.java`               | regex                        | `TreeSitterJavaParser`                                  |
 
 Tree-sitter grammars are `optionalDependencies`. Missing grammars fall back silently per language.
 
@@ -98,28 +99,28 @@ Parsers extract: functions, arrow-function consts, methods (with `scopePath`), c
 
 The server uses **Memgraph MAGE** (`memgraph/memgraph-mage:latest`) for native graph algorithms:
 
-| Algorithm | MAGE call | Fallback |
-|-----------|----------|---------|
-| Community detection (Leiden) | `CALL community_detection.get()` | directory heuristic |
-| PageRank PPR | `CALL pagerank.get()` + 3-hop Cypher | JS power iteration |
-| BM25 text search | `CALL text_search.search()` | lexical scorer |
+| Algorithm                    | MAGE call                            | Fallback            |
+| ---------------------------- | ------------------------------------ | ------------------- |
+| Community detection (Leiden) | `CALL community_detection.get()`     | directory heuristic |
+| PageRank PPR                 | `CALL pagerank.get()` + 3-hop Cypher | JS power iteration  |
+| BM25 text search             | `CALL text_search.search()`          | lexical scorer      |
 
 Result objects include a `mode` field (`"mage_leiden"`, `"directory_heuristic"`, `"mage_pagerank"`, `"js_ppr"`) indicating which path ran.
 
 ## Engines
 
-| Engine | File | Responsibility |
-|--------|------|---------------|
-| `GraphOrchestrator` | `src/graph/orchestrator.ts` | File discovery, parse dispatch, Memgraph writes, incremental/full rebuild |
-| `ArchitectureEngine` | `src/engines/architecture-engine.ts` | Layer rules, violation detection, layer suggestion |
-| `TestEngine` | `src/engines/test-engine.ts` | Test file detection, affected test selection, categorization |
-| `ProgressEngine` | `src/engines/progress-engine.ts` | Task/feature CRUD, blocking issue detection |
-| `EpisodeEngine` | `src/engines/episode-engine.ts` | Episodic memory, decision query, reflect synthesis |
-| `CoordinationEngine` | `src/engines/coordination-engine.ts` | Agent claims, release, staleness detection |
-| `CommunityDetector` | `src/engines/community-detector.ts` | Leiden / directory-heuristic communities |
-| `EmbeddingEngine` | `src/vector/embedding-engine.ts` | Symbol embedding generation and lookup |
-| `HybridRetriever` | `src/graph/hybrid-retriever.ts` | RRF fusion of vector + BM25 + graph expansion |
-| `PPR` | `src/graph/ppr.ts` | Personalized PageRank for relevance ranking |
+| Engine               | File                                 | Responsibility                                                            |
+| -------------------- | ------------------------------------ | ------------------------------------------------------------------------- |
+| `GraphOrchestrator`  | `src/graph/orchestrator.ts`          | File discovery, parse dispatch, Memgraph writes, incremental/full rebuild |
+| `ArchitectureEngine` | `src/engines/architecture-engine.ts` | Layer rules, violation detection, layer suggestion                        |
+| `TestEngine`         | `src/engines/test-engine.ts`         | Test file detection, affected test selection, categorization              |
+| `ProgressEngine`     | `src/engines/progress-engine.ts`     | Task/feature CRUD, blocking issue detection                               |
+| `EpisodeEngine`      | `src/engines/episode-engine.ts`      | Episodic memory, decision query, reflect synthesis                        |
+| `CoordinationEngine` | `src/engines/coordination-engine.ts` | Agent claims, release, staleness detection                                |
+| `CommunityDetector`  | `src/engines/community-detector.ts`  | Leiden / directory-heuristic communities                                  |
+| `EmbeddingEngine`    | `src/vector/embedding-engine.ts`     | Symbol embedding generation and lookup                                    |
+| `HybridRetriever`    | `src/graph/hybrid-retriever.ts`      | RRF fusion of vector + BM25 + graph expansion                             |
+| `PPR`                | `src/graph/ppr.ts`                   | Personalized PageRank for relevance ranking                               |
 
 ## Tool Surface (33 tools)
 
@@ -194,11 +195,11 @@ qdrant/qdrant:latest            # Vector database
 
 All tools accept `profile` parameter:
 
-| Profile | Description |
-|---------|-------------|
+| Profile             | Description                                     |
+| ------------------- | ----------------------------------------------- |
 | `compact` (default) | Low-token, answer-first; omits verbose metadata |
-| `balanced` | Moderate context with key supporting data |
-| `debug` | Full unshaped payload for investigation |
+| `balanced`          | Moderate context with key supporting data       |
+| `debug`             | Full unshaped payload for investigation         |
 
 ## Repository Map
 
