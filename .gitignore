@@ -1,6 +1,10 @@
 # Dependencies
 node_modules/
 
+# Python virtual environments
+.venv/
+venv/
+
 # Build output
 dist/
 
