@@ -6,6 +6,7 @@
 import type { GraphIndexManager } from "../graph/index.js";
 import type { MemgraphClient } from "../graph/client.js";
 import type { CypherStatement } from "../graph/types.js";
+import { extractProjectIdFromScopedId } from "../utils/validation.js";
 
 export interface Feature {
   id: string;
@@ -319,7 +320,7 @@ export class ProgressEngine {
           description: feature.description ?? null,
           startedAt: feature.startedAt,
           createdAt: Date.now(),
-          projectId: feature.id.includes(':') ? feature.id.split(':')[0] : 'default',
+          projectId: extractProjectIdFromScopedId(feature.id),
         },
       );
 
@@ -369,7 +370,7 @@ export class ProgressEngine {
           featureId: task.featureId ?? null,
           assignee: task.assignee ?? null,
           dueDate: task.dueDate ?? null,
-          projectId: task.id.includes(':') ? task.id.split(':')[0] : 'default',
+          projectId: extractProjectIdFromScopedId(task.id),
         },
       );
 

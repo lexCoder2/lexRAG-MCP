@@ -205,3 +205,26 @@ export const LXRAG_ALLOW_RUNTIME_PATH_FALLBACK: boolean =
 // Alias for backward compatibility
 export const CODE_GRAPH_ALLOW_RUNTIME_PATH_FALLBACK =
   LXRAG_ALLOW_RUNTIME_PATH_FALLBACK;
+
+// ── Command Execution ──────────────────────────────────────────────────────
+
+/**
+ * Maximum execution time for command execution in milliseconds.
+ * Env: LXRAG_COMMAND_EXECUTION_TIMEOUT_MS
+ * Default: 30000 (30 seconds)
+ */
+export const LXRAG_COMMAND_EXECUTION_TIMEOUT_MS: number = parseInt(
+  process.env.LXRAG_COMMAND_EXECUTION_TIMEOUT_MS || "30000",
+  10,
+);
+
+/**
+ * Maximum output size for command results in bytes.
+ * Prevents DoS from commands producing massive output.
+ * Env: LXRAG_COMMAND_OUTPUT_SIZE_LIMIT_BYTES
+ * Default: 10485760 (10 MB)
+ */
+export const LXRAG_COMMAND_OUTPUT_SIZE_LIMIT_BYTES: number = parseInt(
+  process.env.LXRAG_COMMAND_OUTPUT_SIZE_LIMIT_BYTES || "10485760",
+  10,
+);

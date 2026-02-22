@@ -6,6 +6,7 @@
 import type { GraphIndexManager } from '../graph/index.js';
 import type QdrantClient from './qdrant-client.js';
 import type { VectorPoint } from './qdrant-client.js';
+import { extractProjectIdFromScopedId } from '../utils/validation.js';
 
 export interface CodeEmbedding {
   id: string;
@@ -93,8 +94,8 @@ export class EmbeddingEngine {
     const text = this.propertiesToText(properties);
     const vector = this.textToVector(text);
 
-    // Extract projectId from scoped ID (format: projectId:type:name)
-    const projectId = id.includes(':') ? id.split(':')[0] : undefined;
+    // Phase 4.2: Extract projectId from scoped ID safely (format: projectId:type:name)
+    const projectId = extractProjectIdFromScopedId(id, undefined);
 
     return {
       id,

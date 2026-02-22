@@ -3,10 +3,11 @@
  * Concrete implementations for all 14 MCP tools
  */
 
-import { execSync } from "child_process";
 import * as fs from "fs";
 import * as path from "path";
 import * as env from "../env.js";
+import { execWithTimeout } from "../utils/exec-utils.js";
+import { generateSecureId } from "../utils/validation.js";
 import type { GraphIndexManager } from "../graph/index.js";
 import type MemgraphClient from "../graph/client.js";
 import ArchitectureEngine from "../engines/architecture-engine.js";
@@ -63,7 +64,8 @@ export class ToolHandlers {
   private communityDetector?: CommunityDetector;
   private hybridRetriever?: HybridRetriever;
   private docsEngine?: DocsEngine;
-  private embeddingsReady = false;
+  // Phase 4.3: Per-project embedding readiness to prevent race conditions
+  private projectEmbeddingsReady = new Map<string, boolean>();
   private lastGraphRebuildAt?: string;
   private lastGraphRebuildMode?: "full" | "incremental";
   private defaultActiveProjectContext: ProjectContext;
@@ -120,8 +122,8 @@ export class ToolHandlers {
         this.archEngine.reload(this.context.index, context.projectId);
       }
 
-      // Reset embedding flag to regenerate for new project
-      this.embeddingsReady = false;
+      // Phase 4.3: Reset embedding flag per-project to prevent race conditions
+      this.clearProjectEmbeddingsReady(context.projectId);
     } catch (error) {
       console.error("[ToolHandlers] Failed to reload engines:", error);
     }
@@ -260,6 +262,80 @@ export class ToolHandlers {
     this.sessionWatchers.set(this.watcherKey(), watcher);
   }
 
+  /**
+   * Phase 4.1: Clean up session resources when a session ends
+   * Prevents memory leaks from unbounded session map growth
+   */
+  async cleanupSession(sessionId: string): Promise<void> {
+    if (!sessionId) return;
+
+    try {
+      // Stop watcher for this session
+      const watcherKey = sessionId;
+      const watcher = this.sessionWatchers.get(watcherKey);
+      if (watcher) {
+        await watcher.stop();
+        this.sessionWatchers.delete(watcherKey);
+        console.log(`[ToolHandlers] Session cleanup: stopped watcher for ${sessionId}`);
+      }
+
+      // Remove project context for this session
+      if (this.sessionProjectContexts.has(sessionId)) {
+        this.sessionProjectContexts.delete(sessionId);
+        console.log(`[ToolHandlers] Session cleanup: removed project context for ${sessionId}`);
+      }
+    } catch (error) {
+      console.error(`[ToolHandlers] Error cleaning up session ${sessionId}:`, error);
+    }
+  }
+
+  /**
+   * Clean up all session resources
+   * Called during server shutdown or restart
+   */
+  async cleanupAllSessions(): Promise<void> {
+    const sessionIds = Array.from(this.sessionProjectContexts.keys());
+    const watcherKeys = Array.from(this.sessionWatchers.keys());
+
+    // Clean up watchers
+    for (const key of watcherKeys) {
+      try {
+        const watcher = this.sessionWatchers.get(key);
+        if (watcher) {
+          await watcher.stop();
+        }
+      } catch (error) {
+        console.error(`[ToolHandlers] Error stopping watcher ${key}:`, error);
+      }
+    }
+
+    this.sessionWatchers.clear();
+    this.sessionProjectContexts.clear();
+    console.log(`[ToolHandlers] Cleaned up all ${sessionIds.length} session contexts`);
+  }
+
+  /**
+   * Phase 4.3: Check if embeddings are ready for a project
+   * Prevents race conditions with per-project tracking
+   */
+  private isProjectEmbeddingsReady(projectId: string): boolean {
+    return this.projectEmbeddingsReady.get(projectId) ?? false;
+  }
+
+  /**
+   * Phase 4.3: Mark embeddings as ready for a project
+   */
+  private setProjectEmbeddingsReady(projectId: string, ready: boolean): void {
+    this.projectEmbeddingsReady.set(projectId, ready);
+  }
+
+  /**
+   * Phase 4.3: Clear embedding readiness state when project context changes
+   */
+  private clearProjectEmbeddingsReady(projectId: string): void {
+    this.projectEmbeddingsReady.delete(projectId);
+  }
+
   private async runWatcherIncrementalRebuild(
     context: ProjectContext & { changedFiles?: string[] },
   ): Promise<void> {
@@ -267,8 +343,9 @@ export class ToolHandlers {
       return;
     }
 
+    // Phase 4.2: Use crypto-secure random ID generation instead of Math.random()
     const txTimestamp = Date.now();
-    const txId = `tx-${txTimestamp}-${Math.random().toString(36).slice(2, 8)}`;
+    const txId = generateSecureId("tx", 4);
 
     if (this.context.memgraph.isConnected()) {
       await this.context.memgraph.executeCypher(
@@ -304,8 +381,8 @@ export class ToolHandlers {
       ],
     });
 
-    // Phase 2a: Reset embeddings for watcher-driven incremental builds
-    this.embeddingsReady = false;
+    // Phase 2a & 4.3: Reset embeddings for watcher-driven incremental builds (per-project to prevent race conditions)
+    this.setProjectEmbeddingsReady(context.projectId, false);
     console.log(
       `[Phase2a] Embeddings flag reset for watcher incremental rebuild of project ${context.projectId}`,
     );
@@ -802,8 +879,11 @@ export class ToolHandlers {
     return null;
   }
 
-  private async ensureEmbeddings(): Promise<void> {
-    if (this.embeddingsReady || !this.embeddingEngine) {
+  // Phase 4.3: Project-scoped embedding readiness check to prevent race conditions
+  private async ensureEmbeddings(projectId?: string): Promise<void> {
+    const activeProjectId = projectId || this.getActiveProjectContext().projectId;
+
+    if (this.isProjectEmbeddingsReady(activeProjectId) || !this.embeddingEngine) {
       return;
     }
 
@@ -813,7 +893,7 @@ export class ToolHandlers {
     }
 
     await this.embeddingEngine.storeInQdrant();
-    this.embeddingsReady = true;
+    this.setProjectEmbeddingsReady(activeProjectId, true);
   }
 
   private resolveElement(elementId: string): GraphNode | undefined {
@@ -1412,9 +1492,9 @@ export class ToolHandlers {
 
       console.log(`[ToolHandlers] Executing: ${cmd}`);
 
-      // Execute vitest
+      // Execute vitest with timeout and output limits
       try {
-        const output = execSync(cmd, {
+        const output = execWithTimeout(cmd, {
           cwd: process.cwd(),
           encoding: "utf-8",
           stdio: ["pipe", "pipe", "pipe"],
@@ -1749,7 +1829,8 @@ export class ToolHandlers {
       this.setActiveProjectContext(resolvedContext);
       const { workspaceRoot, sourceDir, projectId } = resolvedContext;
       const txTimestamp = Date.now();
-      const txId = `tx-${txTimestamp}-${Math.random().toString(36).slice(2, 8)}`;
+      // Phase 4.2: Use crypto-secure random ID generation
+      const txId = generateSecureId("tx", 4);
 
       if (this.context.memgraph.isConnected()) {
         await this.context.memgraph.executeCypher(
@@ -1816,9 +1897,9 @@ export class ToolHandlers {
           }
 
           if (mode === "incremental") {
-            // Phase 2a: Reset embeddings for incremental builds
+            // Phase 2a & 4.3: Reset embeddings for incremental builds (per-project to prevent race conditions)
             // This ensures embeddings are regenerated for changed code on next semantic query
-            this.embeddingsReady = false;
+            this.setProjectEmbeddingsReady(projectId, false);
             console.log(
               `[Phase2a] Embeddings flag reset for incremental rebuild of project ${projectId}`,
             );
@@ -1829,7 +1910,8 @@ export class ToolHandlers {
               const generated = await this.embeddingEngine?.generateAllEmbeddings();
               if (generated && generated.functions + generated.classes + generated.files > 0) {
                 await this.embeddingEngine?.storeInQdrant();
-                this.embeddingsReady = true;
+                // Phase 4.3: Mark embeddings ready per-project
+                this.setProjectEmbeddingsReady(projectId, true);
                 console.log(
                   `[Phase2b] Embeddings auto-generated for full rebuild: ${generated.functions} functions, ${generated.classes} classes, ${generated.files} files for project ${projectId}`,
                 );
@@ -1976,7 +2058,8 @@ export class ToolHandlers {
       if (indexDrift) {
         recommendations.push("Index is out of sync with Memgraph - run graph_rebuild to synchronize");
       }
-      if (embeddingDrift && this.embeddingsReady) {
+      // Phase 4.3: Check per-project embedding readiness
+      if (embeddingDrift && this.isProjectEmbeddingsReady(projectId)) {
         recommendations.push("Some entities don't have embeddings - run semantic_search or graph_rebuild to generate them");
       }
 
@@ -2006,7 +2089,8 @@ export class ToolHandlers {
               : "Index synchronized",
           },
           embeddings: {
-            ready: this.embeddingsReady,
+            // Phase 4.3: Report per-project embedding readiness
+            ready: this.isProjectEmbeddingsReady(projectId),
             generated: embeddingCount,
             coverage: embeddingCoverage,
             driftDetected: embeddingDrift,
