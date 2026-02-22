@@ -10,6 +10,7 @@
  */
 
 import MemgraphClient from '../graph/client.js';
+import * as env from '../env.js';
 
 async function main() {
   const args = process.argv.slice(2);
@@ -25,8 +26,8 @@ async function main() {
     console.log('🔍 Executing query...\n');
 
     const memgraph = new MemgraphClient({
-      host: process.env.MEMGRAPH_HOST || 'localhost',
-      port: parseInt(process.env.MEMGRAPH_PORT || '7687'),
+      host: env.MEMGRAPH_HOST,
+      port: env.MEMGRAPH_PORT,
     });
 
     await memgraph.connect();

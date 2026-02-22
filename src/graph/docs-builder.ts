@@ -7,6 +7,7 @@
 import * as path from "node:path";
 import type { ParsedDoc, ParsedSection } from "../parsers/docs-parser.js";
 import type { CypherStatement } from "./builder.js";
+import * as env from "../env.js";
 
 // ─── Re-export CypherStatement for callers who import only this module ────────
 export type { CypherStatement };
@@ -24,12 +25,12 @@ export class DocsBuilder {
     txTimestamp?: number,
   ) {
     this.workspaceRoot =
-      workspaceRoot ?? process.env.CODE_GRAPH_WORKSPACE_ROOT ?? process.cwd();
+      workspaceRoot ?? env.LEXRAG_WORKSPACE_ROOT ?? process.cwd();
     this.projectId =
       projectId ??
-      process.env.CODE_GRAPH_PROJECT_ID ??
+      env.LEXRAG_PROJECT_ID ??
       path.basename(this.workspaceRoot);
-    this.txId = txId ?? process.env.CODE_GRAPH_TX_ID ?? `tx-${Date.now()}`;
+    this.txId = txId ?? env.LEXRAG_TX_ID ?? `tx-${Date.now()}`;
     this.txTimestamp = txTimestamp ?? Date.now();
   }
 

@@ -14,6 +14,7 @@ import * as path from 'path';
 import * as fs from 'fs';
 import { GraphOrchestrator } from '../graph/orchestrator.js';
 import MemgraphClient from '../graph/client.js';
+import * as env from '../env.js';
 
 async function main() {
   const args = process.argv.slice(2);
@@ -30,8 +31,8 @@ async function main() {
     // Initialize Memgraph client
     console.log('🔌 Connecting to Memgraph...');
     const memgraph = new MemgraphClient({
-      host: process.env.MEMGRAPH_HOST || 'localhost',
-      port: parseInt(process.env.MEMGRAPH_PORT || '7687'),
+      host: env.MEMGRAPH_HOST,
+      port: env.MEMGRAPH_PORT,
     });
 
     await memgraph.connect();
@@ -52,7 +53,7 @@ async function main() {
         'node_modules/**',
         'dist/**',
         'build/**',
-        '.code-graph/**',
+        '.lexrag/**',
         '**/*.test.ts',
         '**/*.test.tsx',
         '**/__tests__/**',
@@ -83,7 +84,7 @@ async function main() {
     }
 
     // Save build metadata
-    const codeGraphDir = path.join(projectRoot, '.code-graph');
+    const codeGraphDir = path.join(projectRoot, '.lexrag');
     if (!fs.existsSync(codeGraphDir)) {
       fs.mkdirSync(codeGraphDir, { recursive: true });
     }

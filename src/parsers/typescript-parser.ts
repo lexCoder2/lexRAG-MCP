@@ -1,5 +1,6 @@
 import * as fs from "fs";
 import * as path from "path";
+import * as env from "../env.js";
 // import Parser from 'web-tree-sitter'; // Optional dependency
 
 export interface ASTNode {
@@ -108,8 +109,7 @@ export class TypeScriptParser {
     const content = fs.readFileSync(filePath, "utf-8");
     const workspaceRoot =
       options?.workspaceRoot ||
-      process.env.CODE_GRAPH_WORKSPACE_ROOT ||
-      process.cwd();
+      env.LEXRAG_WORKSPACE_ROOT;
     const relativePath = path.relative(workspaceRoot, filePath);
     const hash = this.hashContent(content);
     const lines = content.split("\n");

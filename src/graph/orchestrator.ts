@@ -5,6 +5,7 @@
 
 import * as fs from "fs";
 import * as path from "path";
+import * as env from "../env.js";
 import TypeScriptParser, {
   type ParsedFile,
 } from "../parsers/typescript-parser.js";
@@ -88,7 +89,7 @@ export class GraphOrchestrator {
 
     // ── Tree-sitter TypeScript / TSX ────────────────────────────────────────
     // Enable when CODE_GRAPH_USE_TREE_SITTER=true AND native binding compiled.
-    const wantTsTs = process.env.CODE_GRAPH_USE_TREE_SITTER === "true";
+    const wantTsTs = env.LEXRAG_USE_TREE_SITTER;
     const tsAvailability = checkTsTreeSitterAvailability();
     this.useTsTreeSitter = false;
     if (wantTsTs) {
@@ -171,7 +172,7 @@ export class GraphOrchestrator {
     this.cache = new CacheManager();
     this.memgraph = memgraph || new MemgraphClient();
     this.verbose = verbose;
-    this.summarizer = new CodeSummarizer(process.env.CODE_GRAPH_SUMMARIZER_URL);
+    this.summarizer = new CodeSummarizer(env.LEXRAG_SUMMARIZER_URL);
   }
 
   /**
@@ -184,22 +185,20 @@ export class GraphOrchestrator {
       verbose: options.verbose ?? this.verbose,
       workspaceRoot:
         options.workspaceRoot ||
-        process.env.CODE_GRAPH_WORKSPACE_ROOT ||
-        process.cwd(),
+        env.LEXRAG_WORKSPACE_ROOT,
       projectId:
         options.projectId ||
-        process.env.CODE_GRAPH_PROJECT_ID ||
+        env.LEXRAG_PROJECT_ID ||
         path.basename(
           options.workspaceRoot ||
-            process.env.CODE_GRAPH_WORKSPACE_ROOT ||
-            process.cwd(),
+            env.LEXRAG_WORKSPACE_ROOT,
         ),
       sourceDir: options.sourceDir || "src",
       exclude: options.exclude || [
         "node_modules",
         "dist",
         ".next",
-        ".code-graph",
+        ".lexrag",
       ],
       txId: options.txId,
       txTimestamp: options.txTimestamp,

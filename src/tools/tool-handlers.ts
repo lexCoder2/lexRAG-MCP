@@ -6,6 +6,7 @@
 import { execSync } from "child_process";
 import * as fs from "fs";
 import * as path from "path";
+import * as env from "../env.js";
 import type { GraphIndexManager } from "../graph/index.js";
 import type MemgraphClient from "../graph/client.js";
 import ArchitectureEngine from "../engines/architecture-engine.js";
@@ -106,14 +107,9 @@ export class ToolHandlers {
   }
 
   private defaultProjectContext(): ProjectContext {
-    const workspaceRoot = path.resolve(
-      process.env.CODE_GRAPH_WORKSPACE_ROOT || process.cwd(),
-    );
-    const sourceDir = path.resolve(
-      process.env.GRAPH_SOURCE_DIR || path.join(workspaceRoot, "src"),
-    );
-    const projectId =
-      process.env.CODE_GRAPH_PROJECT_ID || path.basename(workspaceRoot);
+    const workspaceRoot = env.LEXRAG_WORKSPACE_ROOT;
+    const sourceDir = env.GRAPH_SOURCE_DIR;
+    const projectId = env.LEXRAG_PROJECT_ID;
 
     return {
       workspaceRoot,
@@ -139,7 +135,7 @@ export class ToolHandlers {
       overrides.projectId ||
       (workspaceProvided
         ? path.basename(workspaceRoot)
-        : process.env.CODE_GRAPH_PROJECT_ID) ||
+        : env.LEXRAG_PROJECT_ID) ||
       path.basename(workspaceRoot);
 
     return {
@@ -158,7 +154,7 @@ export class ToolHandlers {
       return { context, usedFallback: false };
     }
 
-    const fallbackRoot = process.env.CODE_GRAPH_WORKSPACE_ROOT;
+    const fallbackRoot = env.LEXRAG_WORKSPACE_ROOT;
     if (!fallbackRoot || !fs.existsSync(fallbackRoot)) {
       return { context, usedFallback: false };
     }
@@ -188,14 +184,11 @@ export class ToolHandlers {
   }
 
   private runtimePathFallbackAllowed(): boolean {
-    return process.env.CODE_GRAPH_ALLOW_RUNTIME_PATH_FALLBACK === "true";
+    return env.LEXRAG_ALLOW_RUNTIME_PATH_FALLBACK;
   }
 
   private watcherEnabledForRuntime(): boolean {
-    return (
-      process.env.MCP_TRANSPORT === "http" ||
-      process.env.CODE_GRAPH_ENABLE_WATCHER === "true"
-    );
+    return env.MCP_TRANSPORT === "http" || env.LEXRAG_ENABLE_WATCHER;
   }
 
   private watcherKey(): string {
@@ -230,10 +223,7 @@ export class ToolHandlers {
         sourceDir: context.sourceDir,
         projectId: context.projectId,
         debounceMs: 500,
-        ignorePatterns: (process.env.CODE_GRAPH_IGNORE_PATTERNS || "")
-          .split(",")
-          .map((item) => item.trim())
-          .filter(Boolean),
+        ignorePatterns: env.LEXRAG_IGNORE_PATTERNS,
       },
       async ({ projectId, workspaceRoot, sourceDir, changedFiles }) => {
         await this.runWatcherIncrementalRebuild({
@@ -286,7 +276,7 @@ export class ToolHandlers {
         "node_modules",
         "dist",
         ".next",
-        ".code-graph",
+        ".lexrag",
         "__tests__",
         "coverage",
         ".git",
@@ -324,8 +314,8 @@ export class ToolHandlers {
   }
 
   private initializeVectorEngine(): void {
-    const host = process.env.QDRANT_HOST || "localhost";
-    const port = parseInt(process.env.QDRANT_PORT || "6333", 10);
+    const host = env.QDRANT_HOST;
+    const port = env.QDRANT_PORT;
     this.qdrant = new QdrantClient(host, port);
     this.embeddingEngine = new EmbeddingEngine(this.context.index, this.qdrant);
     this.hybridRetriever = new HybridRetriever(
@@ -341,9 +331,9 @@ export class ToolHandlers {
       console.warn("[ToolHandlers] Qdrant connection skipped:", error);
     });
 
-    if (!process.env.CODE_GRAPH_SUMMARIZER_URL) {
+    if (!env.LEXRAG_SUMMARIZER_URL) {
       console.warn(
-        "[summarizer] CODE_GRAPH_SUMMARIZER_URL is not set. " +
+        "[summarizer] LEXRAG_SUMMARIZER_URL is not set. " +
           "Heuristic local summaries will be used, reducing vector search quality and " +
           "compact-profile accuracy. " +
           "Point this to an OpenAI-compatible /v1/chat/completions endpoint for production use.",
@@ -1439,12 +1429,7 @@ export class ToolHandlers {
       const postActions: Record<string, unknown> = {};
       if (String(status || "").toLowerCase() === "completed") {
         const sessionId = this.getCurrentSessionId() || "session-unknown";
-        const runtimeAgentId = String(
-          assignee ||
-            args?.agentId ||
-            process.env.CODE_GRAPH_AGENT_ID ||
-            "agent-local",
-        );
+        const runtimeAgentId = String(assignee || args?.agentId || env.LEXRAG_AGENT_ID);
         const { projectId } = this.getActiveProjectContext();
 
         try {
@@ -1572,7 +1557,7 @@ export class ToolHandlers {
           "WORKSPACE_PATH_SANDBOXED",
           `Requested workspaceRoot is not accessible from this runtime: ${nextContext.workspaceRoot}`,
           true,
-          "Mount the target project into the container (e.g. CODE_GRAPH_TARGET_WORKSPACE) and restart docker-compose, or set CODE_GRAPH_ALLOW_RUNTIME_PATH_FALLBACK=true to force fallback to mounted workspace.",
+          "Mount the target project into the container (e.g. LEXRAG_TARGET_WORKSPACE) and restart docker-compose, or set LEXRAG_ALLOW_RUNTIME_PATH_FALLBACK=true to force fallback to mounted workspace.",
         );
       }
 
@@ -1659,7 +1644,7 @@ export class ToolHandlers {
           "WORKSPACE_PATH_SANDBOXED",
           `Requested workspaceRoot is not accessible from this runtime: ${resolvedContext.workspaceRoot}`,
           true,
-          "Mount the target project into the container (e.g. CODE_GRAPH_TARGET_WORKSPACE) and restart docker-compose, or set CODE_GRAPH_ALLOW_RUNTIME_PATH_FALLBACK=true to force fallback to mounted workspace.",
+          "Mount the target project into the container (e.g. LEXRAG_TARGET_WORKSPACE) and restart docker-compose, or set LEXRAG_ALLOW_RUNTIME_PATH_FALLBACK=true to force fallback to mounted workspace.",
         );
       }
 
@@ -1718,7 +1703,7 @@ export class ToolHandlers {
             "node_modules",
             "dist",
             ".next",
-            ".code-graph",
+            ".lexrag",
             "__tests__",
             "coverage",
             ".git",
@@ -1845,10 +1830,8 @@ export class ToolHandlers {
             mode: this.hybridRetriever?.bm25Mode ?? "not_initialized",
           },
           summarizer: {
-            configured: !!process.env.CODE_GRAPH_SUMMARIZER_URL,
-            endpoint: process.env.CODE_GRAPH_SUMMARIZER_URL
-              ? "[configured]"
-              : null,
+            configured: !!env.LEXRAG_SUMMARIZER_URL,
+            endpoint: env.LEXRAG_SUMMARIZER_URL ? "[configured]" : null,
           },
           rebuild: {
             lastRequestedAt: this.lastGraphRebuildAt || null,
@@ -2295,9 +2278,7 @@ export class ToolHandlers {
 
     try {
       const contextSessionId = this.getCurrentSessionId() || "session-unknown";
-      const runtimeAgentId = String(
-        agentId || process.env.CODE_GRAPH_AGENT_ID || "agent-local",
-      );
+      const runtimeAgentId = String(agentId || env.LEXRAG_AGENT_ID);
       const { projectId } = this.getActiveProjectContext();
 
       const episodeId = await this.episodeEngine!.add(
@@ -2485,9 +2466,7 @@ export class ToolHandlers {
 
     try {
       const runtimeSessionId = this.getCurrentSessionId() || "session-unknown";
-      const runtimeAgentId = String(
-        agentId || process.env.CODE_GRAPH_AGENT_ID || "agent-local",
-      );
+      const runtimeAgentId = String(agentId || env.LEXRAG_AGENT_ID);
       const { projectId } = this.getActiveProjectContext();
 
       const result = await this.coordinationEngine!.claim({
@@ -2615,9 +2594,7 @@ export class ToolHandlers {
     }
 
     try {
-      const runtimeAgentId = String(
-        agentId || process.env.CODE_GRAPH_AGENT_ID || "agent-local",
-      );
+      const runtimeAgentId = String(agentId || env.LEXRAG_AGENT_ID);
       const { projectId, workspaceRoot } = this.getActiveProjectContext();
 
       const seedIds = this.findSeedNodeIds(task, 5);

@@ -228,7 +228,7 @@ Edit the config file for your OS:
   "mcpServers": {
     "code-graph": {
       "command": "node",
-      "args": ["/absolute/path/to/code-graph-server/dist/server.js"],
+      "args": ["/absolute/path/to/lexRAG-MCP/dist/server.js"],
       "env": {
         "MCP_TRANSPORT": "stdio",
         "MEMGRAPH_HOST": "localhost",

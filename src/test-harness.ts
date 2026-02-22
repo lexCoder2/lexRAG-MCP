@@ -82,7 +82,7 @@ async function testOrchestrator(): Promise<void> {
       mode: "incremental",
       verbose: true,
       sourceDir: "src",
-      exclude: ["node_modules", "dist", ".next", ".code-graph"],
+      exclude: ["node_modules", "dist", ".next", ".lexrag"],
     });
 
     console.log("\n[Test] ✓ Build completed!");
@@ -106,7 +106,7 @@ async function testOrchestrator(): Promise<void> {
     // Export snapshot
     const snapshotPath = path.join(
       process.cwd(),
-      ".code-graph/cache/graph.snapshot.json"
+      ".lexrag/cache/graph.snapshot.json"
     );
     orchestrator.exportSnapshot(snapshotPath);
     console.log(`[Test] ✓ Snapshot saved to ${snapshotPath}`);
@@ -131,7 +131,7 @@ async function runAllTests(): Promise<void> {
     console.log("========================================");
     console.log("\nNext steps:");
     console.log("1. Verify node and relationship counts");
-    console.log("2. Check .code-graph/cache/file-hashes.json for cached files");
+    console.log("2. Check .lexrag/cache/file-hashes.json for cached files");
     console.log('3. Run: npm run graph:query "MATCH (n) RETURN count(n)"');
     console.log(
       "4. Start Memgraph: docker-compose -f tools/docker/docker-compose.yml up -d"

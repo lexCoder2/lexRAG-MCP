@@ -46,7 +46,7 @@ export class FileWatcher {
       "**/node_modules/**",
       "**/dist/**",
       "**/.git/**",
-      "**/.code-graph/**",
+      "**/.lexrag/**",
       ...(this.opts.ignorePatterns || []),
     ];
 

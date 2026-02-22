@@ -3,7 +3,7 @@
  * Uses McpServer for simplified tool registration
  */
 
-import * as dotenv from "dotenv";
+import * as env from "./env.js";
 import * as z from "zod";
 import { randomUUID } from "node:crypto";
 import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
@@ -17,12 +17,10 @@ import { loadConfig } from "./config.js";
 import GraphOrchestrator from "./graph/orchestrator.js";
 import { runWithRequestContext } from "./request-context.js";
 
-dotenv.config();
-
 // Initialize components
 const memgraph = new MemgraphClient({
-  host: process.env.MEMGRAPH_HOST || "localhost",
-  port: parseInt(process.env.MEMGRAPH_PORT || "7687"),
+  host: env.MEMGRAPH_HOST,
+  port: env.MEMGRAPH_PORT,
 });
 
 const index = new GraphIndexManager();
@@ -63,7 +61,7 @@ async function initialize() {
 
 // Server implementation info
 const serverInfo = {
-  name: process.env.CODE_GRAPH_SERVER_NAME || "code-graph-server",
+  name: env.LEXRAG_SERVER_NAME,
   version: "1.0.0",
 };
 
@@ -1578,10 +1576,10 @@ function createMcpServerInstance(): McpServer {
 async function main() {
   await initialize();
 
-  const transportMode = process.env.MCP_TRANSPORT || "stdio";
+  const transportMode = env.MCP_TRANSPORT;
 
   if (transportMode === "http") {
-    const port = parseInt(process.env.MCP_PORT || "9000", 10);
+    const port = env.MCP_PORT;
     const app = createMcpExpressApp();
     const sessions = new Map<
       string,
@@ -1682,8 +1680,7 @@ async function main() {
     // Allows A2A-aware orchestrators (LangGraph, AutoGen, etc.) to discover
     // this server as a memory + coordination specialist agent.
     app.get("/.well-known/agent.json", (_req: any, res: any) => {
-      const serverName =
-        process.env.CODE_GRAPH_SERVER_NAME || "code-graph-server";
+      const serverName = env.LEXRAG_SERVER_NAME;
       res.status(200).json({
         "@context": "https://schema.a2aprotocol.dev/v1",
         "@type": "Agent",

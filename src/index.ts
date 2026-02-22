@@ -14,6 +14,7 @@ import GraphIndexManager from "./graph/index.js";
 import GraphOrchestrator from "./graph/orchestrator.js";
 import ToolHandlers from "./tools/tool-handlers.js";
 import { loadConfig } from "./config.js";
+import * as env from "./env.js";
 
 // All tool names exposed by this entry point
 const TOOL_NAMES = [
@@ -64,13 +65,13 @@ class CodeGraphServer {
 
   constructor() {
     this.mcpServer = new McpServer({
-      name: process.env.CODE_GRAPH_SERVER_NAME || "Code Graph MCP Server",
+      name: env.LEXRAG_SERVER_NAME,
       version: "1.0.0",
     });
 
     this.memgraph = new MemgraphClient({
-      host: process.env.MEMGRAPH_HOST || "localhost",
-      port: parseInt(process.env.MEMGRAPH_PORT || "7687"),
+      host: env.MEMGRAPH_HOST,
+      port: env.MEMGRAPH_PORT,
     });
 
     this.index = new GraphIndexManager();

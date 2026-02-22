@@ -372,7 +372,7 @@ npm test               # run all 109 tests
 Every feature below is production-ready today:
 
 - ✅ Hybrid retrieval for `graph_query` — vector + BM25 + graph expansion fused with RRF
-- ✅ AST-accurate parsers via tree-sitter for TypeScript, TSX, JS/MJS/CJS, JSX, Python, Go, Rust, Java (activate with `CODE_GRAPH_USE_TREE_SITTER=true`)
+- ✅ AST-accurate parsers via tree-sitter for TypeScript, TSX, JS/MJS/CJS, JSX, Python, Go, Rust, Java (activate with `LEXRAG_USE_TREE_SITTER=true`)
 - ✅ Watcher-driven incremental rebuilds — your graph stays fresh without manual intervention
 - ✅ Temporal query and diff support — query any past graph state with `asOf`, compare changes with `diff_since`
 - ✅ Indexing-time symbol summarization — compact-profile answers stay useful even in tight token budgets
@@ -384,7 +384,7 @@ Every feature below is production-ready today:
 ## Release highlights
 
 - **Hybrid natural retrieval** — your `graph_query` calls blend vector, BM25, and graph signals with RRF so you get the most relevant results across the whole codebase, not just the closest embedding match.
-- **Multi-language AST parsers** — tree-sitter gives you accurate symbol extraction for TypeScript, TSX, JavaScript, JSX, Python, Go, Rust, and Java. Enable with `CODE_GRAPH_USE_TREE_SITTER=true`; each language falls back gracefully if the grammar isn't installed.
+- **Multi-language AST parsers** — tree-sitter gives you accurate symbol extraction for TypeScript, TSX, JavaScript, JSX, Python, Go, Rust, and Java. Enable with `LEXRAG_USE_TREE_SITTER=true`; each language falls back gracefully if the grammar isn't installed.
 - **Impact-scoped test runs** — `impact_analyze` + `test_select` tell your agent exactly which tests to run after a change, cutting unnecessary CI time without sacrificing coverage confidence.
 - **Docs & ADR indexing** — your documentation is now searchable the same way your code is. `index_docs` walks the workspace, parses every markdown file into `DOCUMENT` and `SECTION` nodes, and stores them in the graph. `search_docs` retrieves them by text query or by symbol association.
 - **Persistent agent memory** — episodes, decisions, and claims survive across VS Code restarts so your agent can pick up exactly where it left off.

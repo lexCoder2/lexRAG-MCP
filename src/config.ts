@@ -167,7 +167,7 @@ const DEFAULT_CONFIG: Config = {
 };
 
 export async function loadConfig(): Promise<Config> {
-  const configPath = path.join(process.cwd(), ".code-graph", "config.json");
+  const configPath = path.join(process.cwd(), ".lexrag", "config.json");
 
   try {
     if (fs.existsSync(configPath)) {
@@ -183,7 +183,7 @@ export async function loadConfig(): Promise<Config> {
 
 export function saveConfig(config: Config, configPath?: string): void {
   const targetPath =
-    configPath || path.join(process.cwd(), ".code-graph", "config.json");
+    configPath || path.join(process.cwd(), ".lexrag", "config.json");
   const dir = path.dirname(targetPath);
 
   if (!fs.existsSync(dir)) {

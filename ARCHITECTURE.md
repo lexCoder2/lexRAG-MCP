@@ -74,7 +74,7 @@ Parsing is handled in `src/graph/orchestrator.ts` which dispatches to the approp
 
 ### Parser registry
 
-| Language   | Extensions            | Parser (default)             | Parser (tree-sitter, `CODE_GRAPH_USE_TREE_SITTER=true`) |
+| Language   | Extensions            | Parser (default)             | Parser (tree-sitter, `LEXRAG_USE_TREE_SITTER=true`) |
 | ---------- | --------------------- | ---------------------------- | ------------------------------------------------------- |
 | TypeScript | `.ts`                 | regex (typescript-parser.ts) | `TreeSitterTypeScriptParser`                            |
 | TSX        | `.tsx`                | regex fallback               | `TreeSitterTSXParser`                                   |
@@ -160,8 +160,8 @@ GET  http://localhost:9000/info
 MEMGRAPH_HOST=localhost          # default: localhost
 MEMGRAPH_PORT=7687               # default: 7687
 MCP_PORT=9000                    # default: 9000
-CODE_GRAPH_PROJECT_ID=my-repo    # optional default project namespace
-CODE_GRAPH_USE_TREE_SITTER=true  # enable tree-sitter AST parsers
+LEXRAG_PROJECT_ID=my-repo    # optional default project namespace
+LEXRAG_USE_TREE_SITTER=true  # enable tree-sitter AST parsers
 ```
 
 ## Build & Run

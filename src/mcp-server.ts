@@ -5,6 +5,7 @@
 
 import * as fs from "fs";
 import * as path from "path";
+import * as env from "./env.js";
 import { Server } from "@modelcontextprotocol/sdk/server/index.js";
 import {
   ListToolsRequestSchema,
@@ -605,13 +606,13 @@ export class MCPServer {
 
   constructor() {
     this.server = new Server({
-      name: process.env.CODE_GRAPH_SERVER_NAME || "lexRAG MCP",
+      name: env.LEXRAG_SERVER_NAME,
       version: "1.0.0",
     });
 
     this.memgraph = new MemgraphClient({
-      host: process.env.MEMGRAPH_HOST || "localhost",
-      port: parseInt(process.env.MEMGRAPH_PORT || "7687"),
+      host: env.MEMGRAPH_HOST,
+      port: env.MEMGRAPH_PORT,
     });
 
     this.index = new GraphIndexManager();
@@ -626,7 +627,7 @@ export class MCPServer {
   }
 
   private loadConfig(): any {
-    const configPath = path.resolve(process.cwd(), ".code-graph/config.json");
+    const configPath = path.resolve(process.cwd(), ".lexrag/config.json");
     if (fs.existsSync(configPath)) {
       return JSON.parse(fs.readFileSync(configPath, "utf-8"));
     }
@@ -751,7 +752,7 @@ export class MCPServer {
     await this.memgraph.connect();
 
     // Determine transport
-    const transport = process.env.MCP_TRANSPORT || "stdio";
+    const transport = env.MCP_TRANSPORT;
 
     if (transport === "stdio") {
       const stdioTransport = new StdioServerTransport();

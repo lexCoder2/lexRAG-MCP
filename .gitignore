@@ -9,7 +9,7 @@ venv/
 dist/
 
 # Local graph/cache artifacts
-.code-graph/
+.lexrag/
 
 # Environment files
 .env

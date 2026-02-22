@@ -1,7 +1,7 @@
 services:
   memgraph:
     image: memgraph/memgraph-mage:latest
-    container_name: code-graph-memgraph
+    container_name: lexRAG-memgraph
     ports:
       - "7687:7687"
       - "7444:7444"
@@ -25,7 +25,7 @@ services:
 
   qdrant:
     image: qdrant/qdrant:latest
-    container_name: code-graph-qdrant
+    container_name: lexRAG-qdrant
     ports:
       - "6333:6333"
       - "6334:6334"
@@ -37,7 +37,7 @@ services:
 
   memgraph-lab:
     image: memgraph/lab:latest
-    container_name: code-graph-memgraph-lab
+    container_name: lexRAG-memgraph-lab
     ports:
       - "3000:3000"
     environment:
@@ -52,7 +52,7 @@ services:
     build:
       context: .
       dockerfile: Dockerfile.dev
-    container_name: lexrag-mcp
+    container_name: lexRAG-mcp
     ports:
       - "9000:9000"
       - "9001:9001"
@@ -65,14 +65,13 @@ services:
       - QDRANT_HOST=qdrant
       - QDRANT_PORT=6333
       - LOG_LEVEL=info
-      - CODE_GRAPH_WORKSPACE_ROOT=/workspace
+      - LEXRAG_WORKSPACE_ROOT=/workspace
       - GRAPH_SOURCE_DIR=/workspace/src
-      - CODE_GRAPH_PROJECT_ID=${CODE_GRAPH_PROJECT_ID:-code-graph-default}
+      - LEXRAG_PROJECT_ID=${LEXRAG_PROJECT_ID:-lexRAG-default}
     volumes:
       - ./src:/app/src
       - ./package.json:/app/package.json
       - ./tsconfig.json:/app/tsconfig.json
-      - ${CODE_GRAPH_TARGET_WORKSPACE:-../stratSolver}:/workspace
     depends_on:
       memgraph:
         condition: service_healthy
@@ -95,6 +94,6 @@ services:
 
 volumes:
   memgraph_data:
-    name: code_graph_memgraph_data
+    name: lexrag_memgraph_data
   qdrant_data:
-    name: code_graph_qdrant_data
+    name: lexrag_qdrant_data
