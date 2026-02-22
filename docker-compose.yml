@@ -52,7 +52,7 @@ services:
     build:
       context: .
       dockerfile: Dockerfile.dev
-    container_name: code-graph-server
+    container_name: lexrag-mcp
     ports:
       - "9000:9000"
       - "9001:9001"

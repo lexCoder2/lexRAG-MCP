@@ -23,8 +23,8 @@ Both transports expose all 35 tools and require the same infrastructure (Memgrap
 | VS Code | 1.99+ (for MCP agent mode in Copilot) |
 
 ```bash
-git clone https://github.com/lexCoder2/code-graph-server.git
-cd code-graph-server
+git clone https://github.com/lexCoder2/lexRAG-MCP.git
+cd lexRAG-MCP
 npm install && npm run build
 ```
 
@@ -261,7 +261,7 @@ Copy the provided instructions template into **your project** so your agent auto
 
 ```bash
 mkdir -p /path/to/your-project/.github
-cp /path/to/code-graph-server/.github/copilot-instructions.md \
+cp /path/to/lexRAG-MCP/.github/copilot-instructions.md \
    /path/to/your-project/.github/copilot-instructions.md
 ```
 

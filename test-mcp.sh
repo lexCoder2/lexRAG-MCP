@@ -6,7 +6,7 @@ SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 DOCKER_COMPOSE_FILE="${DOCKER_COMPOSE_FILE:-$SCRIPT_DIR/docker-compose.yml}"
 
 echo "======================================"
-echo "Code Graph MCP Server Test"
+echo "lexRAG MCP Test"
 echo "======================================"
 echo ""
 

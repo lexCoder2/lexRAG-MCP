@@ -1,5 +1,5 @@
 <div align="center">
-  <img src="docs/brain-logo.svg" alt="Code Graph Server Logo" width="200" />
+  <img src="docs/brain-logo.svg" alt="lexRAG MCP Logo" width="200" />
   <h1>LexRAG MCP</h1>
   <p>A memory and code intelligence layer for software agents.</p>  
 </div>
@@ -136,8 +136,8 @@ The server exposes **38 MCP tools** across:
 ### 1) Install and build
 
 ```bash
-git clone https://github.com/lexCoder2/code-graph-server.git
-cd code-graph-server
+git clone https://github.com/lexCoder2/lexRAG-MCP.git
+cd lexRAG-MCP
 npm install && npm run build
 ```
 

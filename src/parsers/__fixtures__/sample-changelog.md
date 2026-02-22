@@ -1,6 +1,6 @@
 # Changelog
 
-All notable changes to `code-graph-server` are documented here.
+All notable changes to `lexRAG-MCP` are documented here.
 
 ## [1.3.0] - 2026-02-21
 

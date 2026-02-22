@@ -2,7 +2,7 @@
 
 ## Overview
 
-Code Graph Server is a production MCP server that turns any repository into a queryable graph + retrieval system. It exposes **33 MCP tools** across code intelligence, architecture validation, test selection, agent memory, and multi-agent coordination.
+lexRAG MCP is a production MCP server that turns any repository into a queryable graph + retrieval system. It exposes **33 MCP tools** across code intelligence, architecture validation, test selection, agent memory, and multi-agent coordination.
 
 ## Server Implementation
 

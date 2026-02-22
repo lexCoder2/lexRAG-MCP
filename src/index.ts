@@ -1,5 +1,5 @@
 /**
- * Code Graph MCP Server — stdio entry point (legacy)
+ * lexRAG MCP — stdio entry point (legacy)
  *
  * Thin stdio wrapper around ToolHandlers. For the full HTTP server (all 33
  * tools, multi-session, Streamable HTTP transport) use `src/server.ts` via

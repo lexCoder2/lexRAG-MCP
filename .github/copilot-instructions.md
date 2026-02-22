@@ -1,6 +1,6 @@
-# Copilot Instructions for Code Graph Server
+# Copilot Instructions for lexRAG MCP
 
-You are working in the Code Graph MCP Server repository.
+You are working in the lexRAG MCP repository.
 
 ## Primary Goal
 

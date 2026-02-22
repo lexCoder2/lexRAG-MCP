@@ -605,7 +605,7 @@ export class MCPServer {
 
   constructor() {
     this.server = new Server({
-      name: process.env.CODE_GRAPH_SERVER_NAME || "Code Graph MCP Server",
+      name: process.env.CODE_GRAPH_SERVER_NAME || "lexRAG MCP",
       version: "1.0.0",
     });
 

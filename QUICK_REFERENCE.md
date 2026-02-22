@@ -1,4 +1,4 @@
-# Code Graph Server — Quick Reference
+# lexRAG MCP — Quick Reference
 
 ## Session Flow (MCP HTTP)
 
