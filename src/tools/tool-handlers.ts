@@ -26,7 +26,11 @@ import { runPPR } from "../graph/ppr.js";
 import HybridRetriever from "../graph/hybrid-retriever.js";
 import FileWatcher, { type WatcherState } from "../graph/watcher.js";
 import { DocsEngine } from "../engines/docs-engine.js";
-import { DocsParser, findMarkdownFiles, type ParsedSection } from "../parsers/docs-parser.js";
+import {
+  DocsParser,
+  findMarkdownFiles,
+  type ParsedSection,
+} from "../parsers/docs-parser.js";
 import {
   estimateTokens,
   makeBudget,
@@ -1624,7 +1628,12 @@ export class ToolHandlers {
   }
 
   async graph_rebuild(args: any): Promise<string> {
-    const { mode = "incremental", verbose = false, profile = "compact", indexDocs = true } = args;
+    const {
+      mode = "incremental",
+      verbose = false,
+      profile = "compact",
+      indexDocs = true,
+    } = args;
 
     try {
       if (!this.orchestrator) {
@@ -3276,19 +3285,32 @@ export class ToolHandlers {
   // ── Docs/ADR tools ───────────────────────────────────────────────────────────
 
   async index_docs(args: any): Promise<string> {
-    const { workspaceRoot: argsRoot, projectId: argsProject, incremental = true, withEmbeddings = false } = args ?? {};
+    const {
+      workspaceRoot: argsRoot,
+      projectId: argsProject,
+      incremental = true,
+      withEmbeddings = false,
+    } = args ?? {};
     try {
       const { workspaceRoot, projectId } = this.resolveProjectContext({
         workspaceRoot: argsRoot,
         projectId: argsProject,
       });
       if (!this.docsEngine) {
-        return this.errorEnvelope("ENGINE_UNAVAILABLE", "DocsEngine not initialised", false);
+        return this.errorEnvelope(
+          "ENGINE_UNAVAILABLE",
+          "DocsEngine not initialised",
+          false,
+        );
       }
-      const result = await this.docsEngine.indexWorkspace(workspaceRoot, projectId, {
-        incremental,
-        withEmbeddings,
-      });
+      const result = await this.docsEngine.indexWorkspace(
+        workspaceRoot,
+        projectId,
+        {
+          incremental,
+          withEmbeddings,
+        },
+      );
       return this.formatSuccess(
         {
           ok: true,
@@ -3314,15 +3336,27 @@ export class ToolHandlers {
   async search_docs(args: any): Promise<string> {
     const { query, symbol, limit = 10, projectId: argsProject } = args ?? {};
     try {
-      const { projectId } = this.resolveProjectContext({ projectId: argsProject });
+      const { projectId } = this.resolveProjectContext({
+        projectId: argsProject,
+      });
       if (!this.docsEngine) {
-        return this.errorEnvelope("ENGINE_UNAVAILABLE", "DocsEngine not initialised", false);
+        return this.errorEnvelope(
+          "ENGINE_UNAVAILABLE",
+          "DocsEngine not initialised",
+          false,
+        );
       }
       let results;
       if (typeof symbol === "string" && symbol.trim().length > 0) {
-        results = await this.docsEngine.getDocsBySymbol(symbol.trim(), projectId, { limit });
+        results = await this.docsEngine.getDocsBySymbol(
+          symbol.trim(),
+          projectId,
+          { limit },
+        );
       } else if (typeof query === "string" && query.trim().length > 0) {
-        results = await this.docsEngine.searchDocs(query.trim(), projectId, { limit });
+        results = await this.docsEngine.searchDocs(query.trim(), projectId, {
+          limit,
+        });
       } else {
         return this.errorEnvelope(
           "MISSING_PARAM",
@@ -3558,24 +3592,15 @@ export class ToolHandlers {
     let score = 0;
     const text = `${section.heading} ${section.content}`.toLowerCase();
     for (const term of queryTerms) {
-      const re = new RegExp(
-        term.replace(/[.*+?^${}()|[\]\\]/g, "\\$&"),
-        "g",
-      );
+      const re = new RegExp(term.replace(/[.*+?^${}()|[\]\\]/g, "\\$&"), "g");
       const count = (text.match(re) ?? []).length;
       if (count > 0) {
-        score +=
-          count *
-          (section.heading.toLowerCase().includes(term) ? 3 : 1);
+        score += count * (section.heading.toLowerCase().includes(term) ? 3 : 1);
       }
     }
     if (symbol) {
       const symLower = symbol.toLowerCase();
-      if (
-        section.backtickRefs.some((r) =>
-          r.toLowerCase().includes(symLower),
-        )
-      )
+      if (section.backtickRefs.some((r) => r.toLowerCase().includes(symLower)))
         score += 10;
       else if (text.includes(symLower)) score += 5;
     }
@@ -3592,10 +3617,7 @@ export class ToolHandlers {
     const lower = content.toLowerCase();
     const pathLower = relPath.toLowerCase();
     for (const term of queryTerms) {
-      const re = new RegExp(
-        term.replace(/[.*+?^${}()|[\]\\]/g, "\\$&"),
-        "g",
-      );
+      const re = new RegExp(term.replace(/[.*+?^${}()|[\]\\]/g, "\\$&"), "g");
       const count = (lower.match(re) ?? []).length;
       score += count;
       if (pathLower.includes(term)) score += 3;
@@ -3604,10 +3626,7 @@ export class ToolHandlers {
       const symLower = symbol.toLowerCase();
       const symCount = (
         lower.match(
-          new RegExp(
-            symLower.replace(/[.*+?^${}()|[\]\\]/g, "\\$&"),
-            "g",
-          ),
+          new RegExp(symLower.replace(/[.*+?^${}()|[\]\\]/g, "\\$&"), "g"),
         ) ?? []
       ).length;
       score += symCount * 5;
@@ -3642,10 +3661,7 @@ export class ToolHandlers {
     return lines.slice(start, end).join("\n");
   }
 
-  private scanRefSourceFiles(
-    rootPath: string,
-    extensions: string[],
-  ): string[] {
+  private scanRefSourceFiles(rootPath: string, extensions: string[]): string[] {
     const results: string[] = [];
     const ignoreDirs = new Set([
       "node_modules",
@@ -3666,10 +3682,7 @@ export class ToolHandlers {
         const entries = fs.readdirSync(dir, { withFileTypes: true });
         for (const entry of entries) {
           if (entry.isDirectory()) {
-            if (
-              !ignoreDirs.has(entry.name) &&
-              !entry.name.startsWith(".")
-            ) {
+            if (!ignoreDirs.has(entry.name) && !entry.name.startsWith(".")) {
               walk(path.join(dir, entry.name), depth + 1);
             }
           } else if (entry.isFile()) {
@@ -3777,14 +3790,36 @@ export class ToolHandlers {
         setResult = await this.graph_set_workspace(setArgs);
         const setJson = JSON.parse(setResult);
         if (setJson?.error) {
-          steps.push({ step: "graph_set_workspace", status: "failed", detail: setJson.error });
-          return this.formatSuccess({ steps, abortedAt: "graph_set_workspace" }, profile, "Initialization aborted at workspace setup", "init_project_setup");
+          steps.push({
+            step: "graph_set_workspace",
+            status: "failed",
+            detail: setJson.error,
+          });
+          return this.formatSuccess(
+            { steps, abortedAt: "graph_set_workspace" },
+            profile,
+            "Initialization aborted at workspace setup",
+            "init_project_setup",
+          );
         }
         const ctx = setJson?.data?.projectContext ?? setJson?.data ?? {};
-        steps.push({ step: "graph_set_workspace", status: "ok", detail: `projectId=${ctx.projectId ?? "?"}, sourceDir=${ctx.sourceDir ?? "?"}` });
+        steps.push({
+          step: "graph_set_workspace",
+          status: "ok",
+          detail: `projectId=${ctx.projectId ?? "?"}, sourceDir=${ctx.sourceDir ?? "?"}`,
+        });
       } catch (err) {
-        steps.push({ step: "graph_set_workspace", status: "failed", detail: String(err) });
-        return this.formatSuccess({ steps, abortedAt: "graph_set_workspace" }, profile, "Initialization aborted at workspace setup", "init_project_setup");
+        steps.push({
+          step: "graph_set_workspace",
+          status: "failed",
+          detail: String(err),
+        });
+        return this.formatSuccess(
+          { steps, abortedAt: "graph_set_workspace" },
+          profile,
+          "Initialization aborted at workspace setup",
+          "init_project_setup",
+        );
       }
 
       // Step 2 — graph_rebuild
@@ -3801,16 +3836,32 @@ export class ToolHandlers {
         const rebuildResult = await this.graph_rebuild(rebuildArgs);
         const rebuildJson = JSON.parse(rebuildResult);
         if (rebuildJson?.error) {
-          steps.push({ step: "graph_rebuild", status: "failed", detail: rebuildJson.error });
+          steps.push({
+            step: "graph_rebuild",
+            status: "failed",
+            detail: rebuildJson.error,
+          });
         } else {
-          steps.push({ step: "graph_rebuild", status: "queued", detail: `mode=${rebuildMode}, indexDocs=${withDocs}` });
+          steps.push({
+            step: "graph_rebuild",
+            status: "queued",
+            detail: `mode=${rebuildMode}, indexDocs=${withDocs}`,
+          });
         }
       } catch (err) {
-        steps.push({ step: "graph_rebuild", status: "failed", detail: String(err) });
+        steps.push({
+          step: "graph_rebuild",
+          status: "failed",
+          detail: String(err),
+        });
       }
 
       // Step 3 — setup_copilot_instructions (generate if not present)
-      const copilotPath = path.join(resolvedRoot, ".github", "copilot-instructions.md");
+      const copilotPath = path.join(
+        resolvedRoot,
+        ".github",
+        "copilot-instructions.md",
+      );
       if (!fs.existsSync(copilotPath)) {
         try {
           await this.setup_copilot_instructions({
@@ -3819,12 +3870,24 @@ export class ToolHandlers {
             overwrite: false,
             profile: "compact",
           });
-          steps.push({ step: "setup_copilot_instructions", status: "created", detail: ".github/copilot-instructions.md" });
+          steps.push({
+            step: "setup_copilot_instructions",
+            status: "created",
+            detail: ".github/copilot-instructions.md",
+          });
         } catch (err) {
-          steps.push({ step: "setup_copilot_instructions", status: "skipped", detail: String(err) });
+          steps.push({
+            step: "setup_copilot_instructions",
+            status: "skipped",
+            detail: String(err),
+          });
         }
       } else {
-        steps.push({ step: "setup_copilot_instructions", status: "exists", detail: "File already present — skipped" });
+        steps.push({
+          step: "setup_copilot_instructions",
+          status: "exists",
+          detail: "File already present — skipped",
+        });
       }
 
       const ctx = this.resolveProjectContext({
@@ -3839,7 +3902,8 @@ export class ToolHandlers {
           workspaceRoot: ctx.workspaceRoot,
           sourceDir: ctx.sourceDir,
           steps,
-          nextAction: "Call graph_health to confirm the rebuild completed, then graph_query to start exploring.",
+          nextAction:
+            "Call graph_health to confirm the rebuild completed, then graph_query to start exploring.",
         },
         profile,
         `Project ${ctx.projectId} initialized — graph rebuild queued`,
@@ -3885,7 +3949,11 @@ export class ToolHandlers {
       );
     }
 
-    const destFile = path.join(resolvedTarget, ".github", "copilot-instructions.md");
+    const destFile = path.join(
+      resolvedTarget,
+      ".github",
+      "copilot-instructions.md",
+    );
     if (fs.existsSync(destFile) && !overwrite && !dryRun) {
       return this.formatSuccess(
         {
@@ -3920,8 +3988,7 @@ export class ToolHandlers {
         fs.existsSync(path.join(resolvedTarget, "tsconfig.json")) ||
         !!deps["typescript"];
       const isNode =
-        !!pkgJson ||
-        fs.existsSync(path.join(resolvedTarget, "package.json"));
+        !!pkgJson || fs.existsSync(path.join(resolvedTarget, "package.json"));
       const isPython =
         fs.existsSync(path.join(resolvedTarget, "pyproject.toml")) ||
         fs.existsSync(path.join(resolvedTarget, "setup.py")) ||
@@ -3972,7 +4039,9 @@ export class ToolHandlers {
             .filter((e) => e.isDirectory())
             .map((e) => e.name)
             .slice(0, 10);
-        } catch { /* ignore */ }
+        } catch {
+          /* ignore */
+        }
       }
 
       // MCP endpoint detection
@@ -3982,10 +4051,7 @@ export class ToolHandlers {
         fs.existsSync(path.join(resolvedTarget, "src", "server.ts"));
 
       // Compose the instructions doc
-      const lines: string[] = [
-        `# Copilot Instructions for ${name}`,
-        "",
-      ];
+      const lines: string[] = [`# Copilot Instructions for ${name}`, ""];
       if (description) {
         lines.push(description, "");
       }
@@ -4001,7 +4067,9 @@ export class ToolHandlers {
         lines.push(`- **Stack**: ${stack.join(", ")}`);
         lines.push(`- **Source root**: \`${srcDir}/\``);
         if (subDirs.length > 0) {
-          lines.push(`- **Key directories**: ${subDirs.map((d) => `\`${srcDir}/${d}\``).join(", ")}`);
+          lines.push(
+            `- **Key directories**: ${subDirs.map((d) => `\`${srcDir}/${d}\``).join(", ")}`,
+          );
         }
       }
       if (scripts) {
@@ -4056,7 +4124,12 @@ export class ToolHandlers {
         "3. The single best next action",
       );
 
-      lines.push("", `## Source of Truth`, "", `For configuration and setup details, see \`README.md\` and \`QUICK_START.md\`.`);
+      lines.push(
+        "",
+        `## Source of Truth`,
+        "",
+        `For configuration and setup details, see \`README.md\` and \`QUICK_START.md\`.`,
+      );
 
       const content = lines.join("\n") + "\n";
 

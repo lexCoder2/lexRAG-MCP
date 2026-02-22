@@ -94,7 +94,9 @@ describe("DocsBuilder — DOCUMENT statement", () => {
 
   it("DOCUMENT params include all required fields", () => {
     const doc = makeDoc();
-    const stmts = builder("proj", "/root", "tx-1", 1000).buildFromParsedDoc(doc);
+    const stmts = builder("proj", "/root", "tx-1", 1000).buildFromParsedDoc(
+      doc,
+    );
     const p = stmts[0].params;
     expect(p.relativePath).toBe("docs/guide.md");
     expect(p.filePath).toBe("/workspace/docs/guide.md");
@@ -282,7 +284,14 @@ describe("DocsBuilder — edge cases", () => {
   });
 
   it("handles doc with various kinds without throwing", () => {
-    const kinds = ["readme", "adr", "changelog", "guide", "architecture", "other"] as const;
+    const kinds = [
+      "readme",
+      "adr",
+      "changelog",
+      "guide",
+      "architecture",
+      "other",
+    ] as const;
     for (const kind of kinds) {
       expect(() =>
         builder().buildFromParsedDoc(makeDoc({ kind })),
@@ -292,8 +301,10 @@ describe("DocsBuilder — edge cases", () => {
 
   it("different relativePaths produce different DOCUMENT ids", () => {
     const b = builder("p");
-    const id1 = b.buildFromParsedDoc(makeDoc({ relativePath: "docs/a.md" }))[0].params.id;
-    const id2 = b.buildFromParsedDoc(makeDoc({ relativePath: "docs/b.md" }))[0].params.id;
+    const id1 = b.buildFromParsedDoc(makeDoc({ relativePath: "docs/a.md" }))[0]
+      .params.id;
+    const id2 = b.buildFromParsedDoc(makeDoc({ relativePath: "docs/b.md" }))[0]
+      .params.id;
     expect(id1).not.toBe(id2);
   });
 });

@@ -11,26 +11,28 @@
 ![Graph](https://img.shields.io/badge/Graph-Memgraph-00B894)
 ![License](https://img.shields.io/badge/License-MIT-F59E0B)
 
+**[→ QUICK_START.md](QUICK_START.md)** — deploy, connect your vscode editor with ease, wire Copilot or Claude, make your first query (~5 min).  
+**[→ QUICK_REFERENCE.md](QUICK_REFERENCE.md)** — all 38 tools with parameters, look the process.
+
+---
+
 LexRAG Server is your MCP-native memory and code intelligence layer for smarter, faster AI-assisted development.
 
 Turn your repository into a queryable graph so your agents can answer architecture, impact, and planning questions without re-reading the entire codebase on every turn — and so you can stop wasting context budget on files that haven't changed.
-
-**[→ QUICK_START.md](QUICK_START.md)** — deploy, connect your editor, wire Copilot or Claude, first query (~5 min).  
-**[→ QUICK_REFERENCE.md](QUICK_REFERENCE.md)** — all 38 tools with parameters.
 
 ---
 
 ## At a glance
 
-| Capability                  | What you get                                                        |
-| --------------------------- | ------------------------------------------------------------------- |
-| **Code graph intelligence** | Cross-file dependency answers instead of raw file dumps             |
-| **Agent memory**            | Persistent decisions and episodes that survive session restarts     |
-| **Hybrid retrieval**        | Better relevance for natural-language code questions                |
-| **Temporal model**          | Historical queries (`asOf`) and change diffs (`diff_since`)        |
-| **Test intelligence**       | Impact-scoped test selection so you only run what matters           |
+| Capability                  | What you get                                                          |
+| --------------------------- | --------------------------------------------------------------------- |
+| **Code graph intelligence** | Cross-file dependency answers instead of raw file dumps               |
+| **Agent memory**            | Persistent decisions and episodes that survive session restarts       |
+| **Hybrid retrieval**        | Better relevance for natural-language code questions                  |
+| **Temporal model**          | Historical queries (`asOf`) and change diffs (`diff_since`)           |
+| **Test intelligence**       | Impact-scoped test selection so you only run what matters             |
 | **Docs & ADR indexing**     | Search your READMEs and decision records the same way you search code |
-| **MCP-native runtime**      | Works with VS Code Copilot, Claude, and any MCP-compatible client   |
+| **MCP-native runtime**      | Works with VS Code Copilot, Claude, and any MCP-compatible client     |
 
 ## Why you need this
 
@@ -234,16 +236,16 @@ npm test               # run all 109 tests
 
 ## Repository map
 
-| Path | What's inside |
-| ---- | ------------- |
-| `src/server.ts`, `src/mcp-server.ts` | MCP / HTTP transport surfaces |
-| `src/tools/tool-handlers.ts` | all 35 tool implementations |
-| `src/graph/` | graph client, orchestrator, hybrid retriever, watcher, docs builder |
-| `src/engines/` | architecture, test, progress, community, episode, docs engines |
-| `src/parsers/` | AST and markdown parsers (tree-sitter + regex fallback) |
-| `src/response/` | response shaping, profile budgets, summarization |
-| `docs/AGENT_CONTEXT_ENGINE_PLAN.md` | implementation plan and phase status |
-| `docs/GRAPH_EXPERT_AGENT.md` | full agent runbook |
+| Path                                 | What's inside                                                       |
+| ------------------------------------ | ------------------------------------------------------------------- |
+| `src/server.ts`, `src/mcp-server.ts` | MCP / HTTP transport surfaces                                       |
+| `src/tools/tool-handlers.ts`         | all 35 tool implementations                                         |
+| `src/graph/`                         | graph client, orchestrator, hybrid retriever, watcher, docs builder |
+| `src/engines/`                       | architecture, test, progress, community, episode, docs engines      |
+| `src/parsers/`                       | AST and markdown parsers (tree-sitter + regex fallback)             |
+| `src/response/`                      | response shaping, profile budgets, summarization                    |
+| `docs/AGENT_CONTEXT_ENGINE_PLAN.md`  | implementation plan and phase status                                |
+| `docs/GRAPH_EXPERT_AGENT.md`         | full agent runbook                                                  |
 
 ## What's already shipped
 
@@ -304,6 +306,25 @@ See:
 - `.github/copilot-instructions.md`
 - `docs/GRAPH_EXPERT_AGENT.md`
 - [QUICK_START.md](QUICK_START.md): step-by-step deployment, VS Code project wiring, and Copilot / Claude extension configuration
+
+## Contributing
+
+Pull requests are welcome! Whether it's a new parser, a tool improvement, a bug fix, or better docs — open an issue to discuss what you'd like to change, or just send a PR directly.
+
+- **Bugs / features** — open an issue first so we can align on scope
+- **New tools** — follow the handler + registration pattern in `src/tools/tool-handlers.ts` and `src/server.ts`; include tests
+- **Docs** — typos, clarifications, and examples are always appreciated
+
+[→ Open a pull request](https://github.com/lexCoder2/lexRAG-MCP/pulls)
+
+## Support this project
+
+LexRAG MCP is built and maintained in my personal time — researching graph retrieval techniques, designing the tool surface, writing tests, and keeping everything working across MCP protocol updates. a cup of coffe or any help you can provide will make a difference, If it saves you time or makes your AI-assisted workflows meaningfully better, consider supporting the work:
+
+- **GitHub Sponsors** → [github.com/sponsors/lexCoder2](https://github.com/sponsors/lexCoder2)
+- **Buy Me a Coffee** → [buymeacoffee.com/hi8g](https://buymeacoffee.com/hi8g)
+
+Every contribution — no matter the size — helps keep the project active and lets me prioritize new features and support over other obligations. Thank you. 🙏
 
 ## License
 

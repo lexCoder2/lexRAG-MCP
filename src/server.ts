@@ -1412,7 +1412,15 @@ function createMcpServerInstance(): McpServer {
             "What to look for — architecture patterns, conventions, a specific concept, or a code example",
           ),
         mode: z
-          .enum(["auto", "docs", "architecture", "code", "patterns", "all", "structure"])
+          .enum([
+            "auto",
+            "docs",
+            "architecture",
+            "code",
+            "patterns",
+            "all",
+            "structure",
+          ])
           .default("auto")
           .describe(
             "auto = infer from query; docs/architecture = markdown only; code/patterns = source files only; structure = dir tree only; all = everything",
@@ -1474,9 +1482,7 @@ function createMcpServerInstance(): McpServer {
         projectId: z
           .string()
           .optional()
-          .describe(
-            "Project identifier (default: basename of workspaceRoot)",
-          ),
+          .describe("Project identifier (default: basename of workspaceRoot)"),
         rebuildMode: z
           .enum(["incremental", "full"])
           .default("incremental")
@@ -1532,9 +1538,7 @@ function createMcpServerInstance(): McpServer {
         dryRun: z
           .boolean()
           .default(false)
-          .describe(
-            "Return the generated content without writing the file",
-          ),
+          .describe("Return the generated content without writing the file"),
         overwrite: z
           .boolean()
           .default(false)

@@ -137,9 +137,7 @@ describe("DocsParser.parseContent — structure", () => {
   });
 
   it("does not throw on empty content", () => {
-    expect(() =>
-      parser().parseContent("", "/r/empty.md", "/r"),
-    ).not.toThrow();
+    expect(() => parser().parseContent("", "/r/empty.md", "/r")).not.toThrow();
   });
 
   it("handles document with only code fences and no headings", () => {
@@ -229,11 +227,7 @@ describe("DocsParser.parseContent — wordCount", () => {
 
 describe("DocsParser.parseContent — title inference", () => {
   it("uses first H1 as title", () => {
-    const doc = parser().parseContent(
-      "# My Title\n\nBody.",
-      "/r/doc.md",
-      "/r",
-    );
+    const doc = parser().parseContent("# My Title\n\nBody.", "/r/doc.md", "/r");
     expect(doc.title).toBe("My Title");
   });
 
@@ -251,7 +245,11 @@ describe("DocsParser.parseContent — title inference", () => {
 
 describe("DocsParser.parseContent — relativePath", () => {
   it("relativePath is workspace-relative with forward slashes", () => {
-    const doc = parser().parseContent("# T", "/project/docs/api.md", "/project");
+    const doc = parser().parseContent(
+      "# T",
+      "/project/docs/api.md",
+      "/project",
+    );
     expect(doc.relativePath).toBe("docs/api.md");
   });
 });

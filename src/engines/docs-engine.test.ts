@@ -172,8 +172,8 @@ describe("DocsEngine.searchDocs", () => {
     //   2. fallback CONTAINS scan → returns data
     const executeCypher = vi
       .fn()
-      .mockResolvedValueOnce(errResult("no index"))   // native search fails
-      .mockResolvedValueOnce(okResult([row]));         // fallback CONTAINS
+      .mockResolvedValueOnce(errResult("no index")) // native search fails
+      .mockResolvedValueOnce(okResult([row])); // fallback CONTAINS
 
     const mg = makeMemgraph({ executeCypher });
     const engine = new DocsEngine(mg);
@@ -221,9 +221,7 @@ describe("DocsEngine.searchDocs", () => {
       startLine: 3,
       score: 0.95,
     };
-    const executeCypher = vi
-      .fn()
-      .mockResolvedValueOnce(okResult([row])); // native text_search succeeds
+    const executeCypher = vi.fn().mockResolvedValueOnce(okResult([row])); // native text_search succeeds
     const mg = makeMemgraph({ executeCypher });
     const engine = new DocsEngine(mg);
     const results = await engine.searchDocs("graph_rebuild", "proj");

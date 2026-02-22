@@ -4,10 +4,10 @@ Everything you need to go from zero to a fully wired LexRAG instance: infrastruc
 
 The server supports two transports — pick the one that matches your client:
 
-| Transport | Best for | Command |
-| --------- | -------- | ------- |
-| **HTTP** | VS Code Copilot, Claude extension, curl, remote agents | `npm run start:http` |
-| **stdio** | Claude Desktop, Claude Code, any stdio MCP client | `npm run start` |
+| Transport | Best for                                               | Command              |
+| --------- | ------------------------------------------------------ | -------------------- |
+| **HTTP**  | VS Code Copilot, Claude extension, curl, remote agents | `npm run start:http` |
+| **stdio** | Claude Desktop, Claude Code, any stdio MCP client      | `npm run start`      |
 
 Both transports expose all 35 tools and require the same infrastructure (Memgraph + Qdrant).
 
@@ -15,12 +15,12 @@ Both transports expose all 35 tools and require the same infrastructure (Memgrap
 
 ## 1. Prerequisites
 
-| Requirement | Version / notes |
-| ----------- | --------------- |
-| Node.js | 24 or later (`node --version`) |
-| Docker | 24+ with Docker Compose v2 (`docker compose version`) |
-| Git | Any recent version |
-| VS Code | 1.99+ (for MCP agent mode in Copilot) |
+| Requirement | Version / notes                                       |
+| ----------- | ----------------------------------------------------- |
+| Node.js     | 24 or later (`node --version`)                        |
+| Docker      | 24+ with Docker Compose v2 (`docker compose version`) |
+| Git         | Any recent version                                    |
+| VS Code     | 1.99+ (for MCP agent mode in Copilot)                 |
 
 ```bash
 git clone https://github.com/lexCoder2/lexRAG-MCP.git
@@ -48,12 +48,12 @@ docker compose up -d
 docker compose ps   # wait for "healthy" on all services (~30 s)
 ```
 
-| Service | URL |
-| ------- | --- |
-| MCP HTTP server | `http://localhost:9000/mcp` |
-| Health check | `http://localhost:9000/health` |
-| Memgraph Lab UI | `http://localhost:3000` |
-| Qdrant REST API | `http://localhost:6333` |
+| Service         | URL                            |
+| --------------- | ------------------------------ |
+| MCP HTTP server | `http://localhost:9000/mcp`    |
+| Health check    | `http://localhost:9000/health` |
+| Memgraph Lab UI | `http://localhost:3000`        |
+| Qdrant REST API | `http://localhost:6333`        |
 
 > **Docker path note:** your project is mounted at `/workspace` inside the container. Use `/workspace` (not the host path) when calling `graph_set_workspace` in Docker mode.
 
@@ -198,11 +198,11 @@ The server process reads JSON-RPC from stdin and writes responses to stdout. Set
 
 Edit the config file for your OS:
 
-| OS | Path |
-| -- | ---- |
-| macOS | `~/Library/Application Support/Claude/claude_desktop_config.json` |
-| Linux | `~/.config/Claude/claude_desktop_config.json` |
-| Windows | `%APPDATA%\Claude\claude_desktop_config.json` |
+| OS      | Path                                                              |
+| ------- | ----------------------------------------------------------------- |
+| macOS   | `~/Library/Application Support/Claude/claude_desktop_config.json` |
+| Linux   | `~/.config/Claude/claude_desktop_config.json`                     |
+| Windows | `%APPDATA%\Claude\claude_desktop_config.json`                     |
 
 ```json
 {
@@ -291,38 +291,38 @@ To index a **different project** at any time: call `graph_set_workspace` again w
 
 ## 7. Optional environment variables
 
-| Variable | Default | Description |
-| -------- | ------- | ----------- |
-| `CODE_GRAPH_USE_TREE_SITTER` | `false` | AST-accurate parsers for TS/TSX/JS/JSX/Python/Go/Rust/Java |
-| `CODE_GRAPH_WORKSPACE_ROOT` | — | Default workspace path on startup |
-| `CODE_GRAPH_PROJECT_ID` | `default` | Default project namespace |
-| `CODE_GRAPH_TARGET_WORKSPACE` | — | Host path mounted as `/workspace` in Docker Compose |
-| `CODE_GRAPH_ALLOW_RUNTIME_PATH_FALLBACK` | `false` | Allow host paths when running inside Docker |
-| `CODE_GRAPH_SUMMARIZER_URL` | — | OpenAI-compatible endpoint for indexing-time symbol summaries |
-| `MEMGRAPH_HOST` / `MEMGRAPH_PORT` | `localhost` / `7687` | Memgraph connection |
-| `QDRANT_HOST` / `QDRANT_PORT` | `localhost` / `6333` | Qdrant connection |
-| `MCP_PORT` | `9000` | HTTP server port |
-| `MCP_TRANSPORT` | `stdio` | `stdio` or `http` |
-| `LOG_LEVEL` | `info` | `error` / `warn` / `info` / `debug` |
+| Variable                                 | Default              | Description                                                   |
+| ---------------------------------------- | -------------------- | ------------------------------------------------------------- |
+| `CODE_GRAPH_USE_TREE_SITTER`             | `false`              | AST-accurate parsers for TS/TSX/JS/JSX/Python/Go/Rust/Java    |
+| `CODE_GRAPH_WORKSPACE_ROOT`              | —                    | Default workspace path on startup                             |
+| `CODE_GRAPH_PROJECT_ID`                  | `default`            | Default project namespace                                     |
+| `CODE_GRAPH_TARGET_WORKSPACE`            | —                    | Host path mounted as `/workspace` in Docker Compose           |
+| `CODE_GRAPH_ALLOW_RUNTIME_PATH_FALLBACK` | `false`              | Allow host paths when running inside Docker                   |
+| `CODE_GRAPH_SUMMARIZER_URL`              | —                    | OpenAI-compatible endpoint for indexing-time symbol summaries |
+| `MEMGRAPH_HOST` / `MEMGRAPH_PORT`        | `localhost` / `7687` | Memgraph connection                                           |
+| `QDRANT_HOST` / `QDRANT_PORT`            | `localhost` / `6333` | Qdrant connection                                             |
+| `MCP_PORT`                               | `9000`               | HTTP server port                                              |
+| `MCP_TRANSPORT`                          | `stdio`              | `stdio` or `http`                                             |
+| `LOG_LEVEL`                              | `info`               | `error` / `warn` / `info` / `debug`                           |
 
 ---
 
 ## 8. Troubleshooting
 
-| Problem | Solution |
-| ------- | -------- |
-| `400` on MCP call | Missing or expired `mcp-session-id` (HTTP only); re-send `initialize` |
-| `graph_health` shows 0 symbols | `graph_rebuild` hasn't finished; wait 15 s and retry |
-| `Connection refused` on port 9000 | Server not running; `npm run start:http` or `docker compose up -d` |
-| `Connection refused` on port 7687 | Memgraph not started; `docker compose up -d memgraph` |
-| Empty results on `graph_query` | Wrong `workspaceRoot` — Docker needs `/workspace`, host needs native path |
-| Copilot shows no MCP tools | `.vscode/mcp.json` missing or invalid JSON; reload VS Code window |
-| Claude Desktop shows no tools | Config file path wrong or JSON invalid; restart Claude Desktop after fixing |
-| stdio server exits immediately | Check `MEMGRAPH_HOST`/`QDRANT_HOST` env vars; errors go to stderr |
-| `graph_rebuild` returns immediately | Normal — it's async; poll `graph_health` until `indexedSymbols > 0` |
-| Build fails | `npm install && npm run build`; check TypeScript errors |
-| Tree-sitter inactive | `export CODE_GRAPH_USE_TREE_SITTER=true` before starting the server |
-| `docs_index` not found (upgrade) | Run `graph_rebuild mode:full` once to create the missing index |
+| Problem                             | Solution                                                                    |
+| ----------------------------------- | --------------------------------------------------------------------------- |
+| `400` on MCP call                   | Missing or expired `mcp-session-id` (HTTP only); re-send `initialize`       |
+| `graph_health` shows 0 symbols      | `graph_rebuild` hasn't finished; wait 15 s and retry                        |
+| `Connection refused` on port 9000   | Server not running; `npm run start:http` or `docker compose up -d`          |
+| `Connection refused` on port 7687   | Memgraph not started; `docker compose up -d memgraph`                       |
+| Empty results on `graph_query`      | Wrong `workspaceRoot` — Docker needs `/workspace`, host needs native path   |
+| Copilot shows no MCP tools          | `.vscode/mcp.json` missing or invalid JSON; reload VS Code window           |
+| Claude Desktop shows no tools       | Config file path wrong or JSON invalid; restart Claude Desktop after fixing |
+| stdio server exits immediately      | Check `MEMGRAPH_HOST`/`QDRANT_HOST` env vars; errors go to stderr           |
+| `graph_rebuild` returns immediately | Normal — it's async; poll `graph_health` until `indexedSymbols > 0`         |
+| Build fails                         | `npm install && npm run build`; check TypeScript errors                     |
+| Tree-sitter inactive                | `export CODE_GRAPH_USE_TREE_SITTER=true` before starting the server         |
+| `docs_index` not found (upgrade)    | Run `graph_rebuild mode:full` once to create the missing index              |
 
 ---
 
@@ -338,12 +338,12 @@ Memgraph Lab UI: `http://localhost:3000` (full Docker Compose stack only).
 
 ## Total setup time
 
-| Step | Time |
-| ---- | ---- |
-| Docker startup | ~30 s |
-| `npm install && npm run build` | ~1 min |
-| Graph index (medium repo) | 5–30 s |
-| First query | immediate |
+| Step                           | Time      |
+| ------------------------------ | --------- |
+| Docker startup                 | ~30 s     |
+| `npm install && npm run build` | ~1 min    |
+| Graph index (medium repo)      | 5–30 s    |
+| First query                    | immediate |
 
 ---
 

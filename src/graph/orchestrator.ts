@@ -352,7 +352,9 @@ export class GraphOrchestrator {
 
       // Index documentation files (Phase 6 — Docs/ADR Indexing)
       const shouldIndexDocs =
-        (opts.indexDocs ?? true) && opts.mode === "full" && this.memgraph.isConnected();
+        (opts.indexDocs ?? true) &&
+        opts.mode === "full" &&
+        this.memgraph.isConnected();
       if (shouldIndexDocs) {
         if (opts.verbose) {
           console.log("[GraphOrchestrator] Indexing documentation files...");

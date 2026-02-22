@@ -115,8 +115,14 @@ export class DocsParser {
     if (/readme/i.test(basename)) return "readme";
     if (/^changelog|^history/.test(basename)) return "changelog";
     if (/^architecture|^arch\./.test(basename)) return "architecture";
-    if (/adr[-_\s]?\d+/.test(lower) || /(?:^|\/)decisions?\//i.test(lower) || /(?:^|\/)adr\//i.test(lower)) return "adr";
-    if (/\/docs\//i.test(`/${lower}`) || lower.startsWith("docs/")) return "guide";
+    if (
+      /adr[-_\s]?\d+/.test(lower) ||
+      /(?:^|\/)decisions?\//i.test(lower) ||
+      /(?:^|\/)adr\//i.test(lower)
+    )
+      return "adr";
+    if (/\/docs\//i.test(`/${lower}`) || lower.startsWith("docs/"))
+      return "guide";
 
     return "other";
   }
@@ -222,7 +228,11 @@ export class DocsParser {
           currentStartLine = lineNumber - 1;
           continue;
         }
-        if (/^-{3,}\s*$/.test(line) && prevLine.trim().length > 0 && !prevLine.startsWith("#")) {
+        if (
+          /^-{3,}\s*$/.test(line) &&
+          prevLine.trim().length > 0 &&
+          !prevLine.startsWith("#")
+        ) {
           const headingText = currentBodyLines.pop()?.trim() ?? "";
           flush(lineNumber - 1);
           currentHeading = headingText;
@@ -274,7 +284,10 @@ export class DocsParser {
 
   // ── Extraction helpers ───────────────────────────────────────────────────────
 
-  private extractCodeFences(body: string, sectionStartLine: number): CodeFence[] {
+  private extractCodeFences(
+    body: string,
+    sectionStartLine: number,
+  ): CodeFence[] {
     const fences: CodeFence[] = [];
     const lines = body.split("\n");
     let inFence = false;
@@ -298,7 +311,11 @@ export class DocsParser {
 
       if (inFence) {
         if (line.startsWith(fenceMarker)) {
-          fences.push({ lang, code: fenceLines.join("\n"), startLine: fenceStart });
+          fences.push({
+            lang,
+            code: fenceLines.join("\n"),
+            startLine: fenceStart,
+          });
           inFence = false;
           fenceMarker = "";
           fenceLines = [];
@@ -349,7 +366,15 @@ export class DocsParser {
  */
 export function findMarkdownFiles(workspaceRoot: string): string[] {
   const results: string[] = [];
-  const excluded = new Set(["node_modules", "dist", ".git", ".code-graph", ".next", "build", "coverage"]);
+  const excluded = new Set([
+    "node_modules",
+    "dist",
+    ".git",
+    ".code-graph",
+    ".next",
+    "build",
+    "coverage",
+  ]);
 
   const walk = (dir: string, depth: number): void => {
     if (depth > 6) return; // Don't recurse infinitely
@@ -381,10 +406,7 @@ export function findMarkdownFiles(workspaceRoot: string): string[] {
         if (depth === 0 || isDocDir) {
           walk(fullPath, depth + 1);
         }
-      } else if (
-        entry.isFile() &&
-        /\.(md|mdx)$/i.test(entry.name)
-      ) {
+      } else if (entry.isFile() && /\.(md|mdx)$/i.test(entry.name)) {
         results.push(fullPath);
       }
     }

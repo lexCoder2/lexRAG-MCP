@@ -175,7 +175,7 @@ This replaces UUID-based IDs in the builder and becomes the primary identifier f
 
 ### 0.3 Key Differentiator vs Existing Systems
 
-| Dimension                | GraphRAG               | LightRAG               | Graphiti                     | **lexRAG-MCP (target)**                             |
+| Dimension                | GraphRAG               | LightRAG               | Graphiti                     | **lexRAG-MCP (target)**                                    |
 | ------------------------ | ---------------------- | ---------------------- | ---------------------------- | ---------------------------------------------------------- |
 | Domain                   | General text           | General text           | Conversation/enterprise data | **Source code**                                            |
 | Graph structure          | LLM-extracted entities | LLM-extracted entities | Episodic memory + entities   | **AST-precise** (functions, classes, imports, call graphs) |

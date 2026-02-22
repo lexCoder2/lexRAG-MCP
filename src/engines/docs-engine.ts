@@ -46,7 +46,11 @@ export interface DocsEngineOptions {
   /** Override parser (useful in tests) */
   parser?: DocsParser;
   /** Override builder factory (useful in tests) */
-  buildCypher?: (doc: ParsedDoc, projectId: string, txId: string) => ReturnType<DocsBuilder["buildFromParsedDoc"]>;
+  buildCypher?: (
+    doc: ParsedDoc,
+    projectId: string,
+    txId: string,
+  ) => ReturnType<DocsBuilder["buildFromParsedDoc"]>;
 }
 
 export const DOCS_COLLECTION = "document_sections";
@@ -71,12 +75,7 @@ export class DocsEngine {
     this.buildCypher =
       opts.buildCypher ??
       ((doc, projectId, txId) => {
-        const builder = new DocsBuilder(
-          projectId,
-          undefined,
-          txId,
-          Date.now(),
-        );
+        const builder = new DocsBuilder(projectId, undefined, txId, Date.now());
         return builder.buildFromParsedDoc(doc);
       });
   }
@@ -116,10 +115,7 @@ export class DocsEngine {
         const doc = this.parser.parseFile(filePath, workspaceRoot);
 
         // Incremental: skip when hash unchanged
-        if (
-          incremental &&
-          existingHashes.get(doc.relativePath) === doc.hash
-        ) {
+        if (incremental && existingHashes.get(doc.relativePath) === doc.hash) {
           result.skipped++;
           continue;
         }
@@ -231,7 +227,10 @@ LIMIT $limit
         relativePath: unknown;
         hash: unknown;
       }>) {
-        if (typeof row.relativePath === "string" && typeof row.hash === "string") {
+        if (
+          typeof row.relativePath === "string" &&
+          typeof row.hash === "string"
+        ) {
           map.set(row.relativePath, row.hash);
         }
       }
