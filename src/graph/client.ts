@@ -213,6 +213,57 @@ export class MemgraphClient {
   }
 
   /**
+   * Load all nodes and relationships for a project from Memgraph
+   * Used for Phase 2c: Populate in-memory index from database on startup
+   */
+  async loadProjectGraph(projectId: string): Promise<{
+    nodes: Array<{ id: string; type: string; properties: Record<string, any> }>;
+    relationships: Array<{ id: string; from: string; to: string; type: string; properties?: Record<string, any> }>;
+  }> {
+    if (!this.connected) {
+      return { nodes: [], relationships: [] };
+    }
+
+    try {
+      // Load all nodes for this projectId
+      const nodesResult = await this.executeCypher(
+        `MATCH (n {projectId: $projectId})
+         RETURN n.id AS id, labels(n)[0] AS type, properties(n) AS props`,
+        { projectId }
+      );
+
+      const nodes = nodesResult.data.map((row: any) => ({
+        id: row.id,
+        type: row.type,
+        properties: row.props || {},
+      }));
+
+      // Load all relationships for this projectId
+      const relsResult = await this.executeCypher(
+        `MATCH (n1 {projectId: $projectId})-[r]->(n2 {projectId: $projectId})
+         RETURN n1.id AS from, n2.id AS to, type(r) AS type, properties(r) AS props`,
+        { projectId }
+      );
+
+      const relationships = relsResult.data.map((row: any) => ({
+        id: `${row.from}-${row.type}-${row.to}`,
+        from: row.from,
+        to: row.to,
+        type: row.type,
+        properties: row.props || {},
+      }));
+
+      return { nodes, relationships };
+    } catch (error) {
+      console.error(
+        `[MemgraphClient] Failed to load project graph for ${projectId}:`,
+        error,
+      );
+      return { nodes: [], relationships: [] };
+    }
+  }
+
+  /**
    * Check connection status
    */
   isConnected(): boolean {

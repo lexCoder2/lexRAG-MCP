@@ -73,6 +73,8 @@ export class ToolHandlers {
   constructor(private context: ToolContext) {
     this.defaultActiveProjectContext = this.defaultProjectContext();
     this.initializeEngines();
+    // Phase 2c: Load index from Memgraph on startup (fire and forget)
+    void this.initializeIndexFromMemgraph();
   }
 
   private getCurrentSessionId(): string | undefined {
@@ -363,6 +365,60 @@ export class ToolHandlers {
           "compact-profile accuracy. " +
           "Point this to an OpenAI-compatible /v1/chat/completions endpoint for production use.",
       );
+    }
+  }
+
+  /**
+   * Phase 2c: Load index from Memgraph on startup
+   * Populates the in-memory index with data from the database
+   * This enables tools to work immediately without requiring a rebuild first
+   */
+  private async initializeIndexFromMemgraph(): Promise<void> {
+    try {
+      if (!this.context.memgraph.isConnected()) {
+        console.log(
+          "[Phase2c] Memgraph not connected, skipping index initialization from database",
+        );
+        return;
+      }
+
+      const projectId = this.defaultActiveProjectContext.projectId;
+      console.log(
+        `[Phase2c] Loading index from Memgraph for project ${projectId}...`,
+      );
+
+      const graphData = await this.context.memgraph.loadProjectGraph(projectId);
+      const { nodes, relationships } = graphData;
+
+      if (nodes.length === 0 && relationships.length === 0) {
+        console.log(
+          `[Phase2c] No data found in Memgraph for project ${projectId}, index remains empty`,
+        );
+        return;
+      }
+
+      // Add all nodes to the index
+      for (const node of nodes) {
+        this.context.index.addNode(node.id, node.type, node.properties);
+      }
+
+      // Add all relationships to the index
+      for (const rel of relationships) {
+        this.context.index.addRelationship(
+          rel.id,
+          rel.from,
+          rel.to,
+          rel.type,
+          rel.properties,
+        );
+      }
+
+      console.log(
+        `[Phase2c] Index loaded from Memgraph: ${nodes.length} nodes, ${relationships.length} relationships for project ${projectId}`,
+      );
+    } catch (error) {
+      console.error("[Phase2c] Failed to initialize index from Memgraph:", error);
+      // Continue regardless - index is optional for startup
     }
   }
 
