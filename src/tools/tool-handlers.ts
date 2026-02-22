@@ -20,6 +20,7 @@ import { estimateTokens, makeBudget } from "../response/budget.js";
 import { ToolHandlerBase, type ToolContext } from "./tool-handler-base.js";
 import { createRefTools } from "./handlers/ref-tools.js";
 import { createArchTools } from "./handlers/arch-tools.js";
+import { createDocsTools } from "./handlers/docs-tools.js";
 
 // Re-export base types for external consumers
 export type { ToolContext, ProjectContext } from "./tool-handler-base.js";
@@ -40,6 +41,7 @@ export class ToolHandlers extends ToolHandlerBase {
     // Initialize domain-specific tool handlers (Phase 5)
     this.initializeRefTools();
     this.initializeArchTools();
+    this.initializeDocsTools();
   }
 
   /**
@@ -57,6 +59,15 @@ export class ToolHandlers extends ToolHandlerBase {
     const archTools = createArchTools(this as any);
     (this as any).arch_validate = archTools.arch_validate.bind(this);
     (this as any).arch_suggest = archTools.arch_suggest.bind(this);
+  }
+
+  /**
+   * Initialize documentation tools from dedicated module
+   */
+  private initializeDocsTools(): void {
+    const docsTools = createDocsTools(this as any);
+    (this as any).index_docs = docsTools.index_docs.bind(this);
+    (this as any).search_docs = docsTools.search_docs.bind(this);
   }
 
   async graph_query(args: any): Promise<string> {
@@ -2548,118 +2559,6 @@ export class ToolHandlers extends ToolHandlerBase {
   }
 
   // ── Docs/ADR tools ───────────────────────────────────────────────────────────
-
-  async index_docs(args: any): Promise<string> {
-    const {
-      workspaceRoot: argsRoot,
-      projectId: argsProject,
-      incremental = true,
-      withEmbeddings = false,
-    } = args ?? {};
-    try {
-      const { workspaceRoot, projectId } = this.resolveProjectContext({
-        workspaceRoot: argsRoot,
-        projectId: argsProject,
-      });
-      if (!this.docsEngine) {
-        return this.errorEnvelope(
-          "ENGINE_UNAVAILABLE",
-          "DocsEngine not initialised",
-          false,
-        );
-      }
-      const result = await this.docsEngine.indexWorkspace(
-        workspaceRoot,
-        projectId,
-        {
-          incremental,
-          withEmbeddings,
-        },
-      );
-      return this.formatSuccess(
-        {
-          ok: true,
-          indexed: result.indexed,
-          skipped: result.skipped,
-          errorCount: result.errors.length,
-          errors: result.errors.slice(0, 10),
-          durationMs: result.durationMs,
-          projectId,
-          workspaceRoot,
-        },
-        "compact",
-      );
-    } catch (err) {
-      return this.errorEnvelope(
-        "INDEX_DOCS_ERROR",
-        err instanceof Error ? err.message : String(err),
-        true,
-      );
-    }
-  }
-
-  async search_docs(args: any): Promise<string> {
-    const { query, symbol, limit = 10, projectId: argsProject } = args ?? {};
-    try {
-      const { projectId } = this.resolveProjectContext({
-        projectId: argsProject,
-      });
-      if (!this.docsEngine) {
-        return this.errorEnvelope(
-          "ENGINE_UNAVAILABLE",
-          "DocsEngine not initialised",
-          false,
-        );
-      }
-      let results;
-      if (typeof symbol === "string" && symbol.trim().length > 0) {
-        results = await this.docsEngine.getDocsBySymbol(
-          symbol.trim(),
-          projectId,
-          { limit },
-        );
-      } else if (typeof query === "string" && query.trim().length > 0) {
-        results = await this.docsEngine.searchDocs(query.trim(), projectId, {
-          limit,
-        });
-      } else {
-        return this.errorEnvelope(
-          "MISSING_PARAM",
-          "Provide either `query` (full-text search) or `symbol` (symbol lookup)",
-          true,
-        );
-      }
-      return this.formatSuccess(
-        {
-          ok: true,
-          count: results.length,
-          results: results.map((r) => ({
-            heading: r.heading,
-            doc: r.docRelativePath,
-            kind: r.kind,
-            startLine: r.startLine,
-            score: r.score,
-            excerpt: r.content.slice(0, 200),
-          })),
-          projectId,
-        },
-        "compact",
-      );
-    } catch (err) {
-      return this.errorEnvelope(
-        "SEARCH_DOCS_ERROR",
-        err instanceof Error ? err.message : String(err),
-        true,
-      );
-    }
-  }
-
-  // ──────────────────────────────────────────────────────────────────────────
-  // ref_query — query a reference repository on the same machine
-  // ──────────────────────────────────────────────────────────────────────────
-
-  // init_project_setup — one-shot initialization: set workspace + rebuild
-  // ──────────────────────────────────────────────────────────────────────────
 
   async init_project_setup(args: any): Promise<string> {
     const {
