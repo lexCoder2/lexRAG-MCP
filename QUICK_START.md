@@ -1,19 +1,26 @@
-# Quick Start — LexRAG MCP Server
+# Setup & Quick Start — LexRAG MCP Server
 
-Get the server running and your first query answered in ~5 minutes.
+Everything you need to go from zero to a fully wired LexRAG instance: infrastructure up, server running, your project indexed, and your editor connected.
 
-The server supports two transports. Pick the one that matches your client:
+The server supports two transports — pick the one that matches your client:
 
-| Transport | Best for | Entry point |
-| --------- | -------- | ----------- |
-| **HTTP** | VS Code Copilot, Claude, remote agents, curl | `npm run start:http` |
+| Transport | Best for | Command |
+| --------- | -------- | ------- |
+| **HTTP** | VS Code Copilot, Claude extension, curl, remote agents | `npm run start:http` |
 | **stdio** | Claude Desktop, Claude Code, any stdio MCP client | `npm run start` |
 
 Both transports expose all 35 tools and require the same infrastructure (Memgraph + Qdrant).
 
 ---
 
-## Step 1 — Install and build
+## 1. Prerequisites
+
+| Requirement | Version / notes |
+| ----------- | --------------- |
+| Node.js | 24 or later (`node --version`) |
+| Docker | 24+ with Docker Compose v2 (`docker compose version`) |
+| Git | Any recent version |
+| VS Code | 1.99+ (for MCP agent mode in Copilot) |
 
 ```bash
 git clone https://github.com/lexCoder2/code-graph-server.git
@@ -29,36 +36,62 @@ export CODE_GRAPH_USE_TREE_SITTER=true
 
 ---
 
-## Step 2 — Start infrastructure
+## 2. Start infrastructure
+
+### Option A — Full Docker Compose (recommended)
+
+All four services start as containers. The graph server indexes the project mounted at `CODE_GRAPH_TARGET_WORKSPACE`.
 
 ```bash
-docker compose up -d memgraph qdrant
-docker compose ps   # wait until memgraph shows "healthy"
+export CODE_GRAPH_TARGET_WORKSPACE=/absolute/path/to/your-project
+docker compose up -d
+docker compose ps   # wait for "healthy" on all services (~30 s)
 ```
 
----
+| Service | URL |
+| ------- | --- |
+| MCP HTTP server | `http://localhost:9000/mcp` |
+| Health check | `http://localhost:9000/health` |
+| Memgraph Lab UI | `http://localhost:3000` |
+| Qdrant REST API | `http://localhost:6333` |
 
-## Route A — HTTP transport
+> **Docker path note:** your project is mounted at `/workspace` inside the container. Use `/workspace` (not the host path) when calling `graph_set_workspace` in Docker mode.
 
-Use this when connecting from **VS Code Copilot**, **Claude extension**, or any HTTP-capable MCP client.
+### Option B — DBs in Docker, server on host
 
-### Start the server
+Better for development — edit TypeScript and restart without rebuilding an image.
 
 ```bash
+# Start only the databases
+docker compose up -d memgraph qdrant
+docker compose ps   # wait for memgraph to be healthy
+
+# Start the server on the host
+export MEMGRAPH_HOST=localhost
+export MEMGRAPH_PORT=7687
+export QDRANT_HOST=localhost
+export QDRANT_PORT=6333
+
 npm run start:http
 # [CodeGraphServer] MCP HTTP server started on port 9000
 ```
-
-Health check:
 
 ```bash
 curl http://localhost:9000/health
 # {"status":"ok"}
 ```
 
-### Session flow
+> In host mode use native absolute paths in `graph_set_workspace` (e.g. `/home/you/your-project`).
 
-HTTP workspace context is **session-scoped** — every client connection must run this sequence once before tools return results.
+---
+
+## 3. Route A — HTTP transport
+
+Use this with **VS Code Copilot**, the **Claude VS Code extension**, or any HTTP MCP client.
+
+### First session (curl)
+
+HTTP workspace context is **session-scoped** — run this sequence once per client connection before tools return results.
 
 ```bash
 # 1. Initialize — capture mcp-session-id from the response header
@@ -71,22 +104,22 @@ SESSION_ID=$(curl -s -D - -X POST http://localhost:9000/mcp \
 
 echo "Session: $SESSION_ID"
 
-# 2. Set workspace
+# 2. Set workspace (Docker mode: use /workspace; host mode: use native path)
 curl -s -X POST http://localhost:9000/mcp \
   -H "Content-Type: application/json" \
   -H "mcp-session-id: $SESSION_ID" \
   -d '{"jsonrpc":"2.0","id":2,"method":"tools/call","params":{
         "name":"graph_set_workspace",
-        "arguments":{"workspaceRoot":"/path/to/your-project","projectId":"my-repo"}}}'
+        "arguments":{"workspaceRoot":"/path/to/your-project","sourceDir":"src","projectId":"my-repo"}}}'
 
-# 3. Build the graph (async — returns immediately, indexes in background)
+# 3. Build the graph (async — indexes in background, returns immediately)
 curl -s -X POST http://localhost:9000/mcp \
   -H "Content-Type: application/json" \
   -H "mcp-session-id: $SESSION_ID" \
   -d '{"jsonrpc":"2.0","id":3,"method":"tools/call","params":{
         "name":"graph_rebuild","arguments":{"mode":"full"}}}'
 
-# Wait 5–30 s, then verify
+# 4. Wait ~15 s, then verify
 sleep 15
 curl -s -X POST http://localhost:9000/mcp \
   -H "Content-Type: application/json" \
@@ -95,9 +128,35 @@ curl -s -X POST http://localhost:9000/mcp \
         "name":"graph_health","arguments":{"profile":"compact"}}}'
 ```
 
-### Wire it to VS Code Copilot
+A healthy response looks like:
 
-Create `.vscode/mcp.json` in your project:
+```json
+{ "indexedSymbols": 312, "memgraphConnected": true, "lastRebuild": "full" }
+```
+
+### First queries
+
+```bash
+# Natural language
+curl -s -X POST http://localhost:9000/mcp \
+  -H "Content-Type: application/json" \
+  -H "mcp-session-id: $SESSION_ID" \
+  -d '{"jsonrpc":"2.0","id":5,"method":"tools/call","params":{
+        "name":"graph_query",
+        "arguments":{"query":"find all classes in the engines layer","language":"natural"}}}'
+
+# Explain a symbol with its dependencies
+curl -s -X POST http://localhost:9000/mcp \
+  -H "Content-Type: application/json" \
+  -H "mcp-session-id: $SESSION_ID" \
+  -d '{"jsonrpc":"2.0","id":6,"method":"tools/call","params":{
+        "name":"code_explain",
+        "arguments":{"symbol":"GraphOrchestrator","depth":2}}}'
+```
+
+### Connect VS Code Copilot (HTTP)
+
+Create `.vscode/mcp.json` in the root of **your project** and commit it so every contributor gets the integration:
 
 ```json
 {
@@ -110,41 +169,40 @@ Create `.vscode/mcp.json` in your project:
 }
 ```
 
+Or add it globally via **VS Code Settings** (`Cmd/Ctrl+,`) → search `mcp`:
+
+```json
+"github.copilot.chat.mcp.servers": {
+  "code-graph": {
+    "type": "http",
+    "url": "http://localhost:9000/mcp"
+  }
+}
+```
+
 Open Copilot Chat → switch to **Agent** mode → the 35 tools are available immediately.
 
-### First query over HTTP
+### Connect the Claude VS Code extension (HTTP)
 
-```bash
-curl -s -X POST http://localhost:9000/mcp \
-  -H "Content-Type: application/json" \
-  -H "mcp-session-id: $SESSION_ID" \
-  -d '{"jsonrpc":"2.0","id":5,"method":"tools/call","params":{
-        "name":"graph_query",
-        "arguments":{"query":"find all classes in the engines layer","language":"natural"}}}'
-```
+The Claude extension reads the same `.vscode/mcp.json`. No extra config needed once the file is in place.
 
 ---
 
-## Route B — stdio transport
+## 4. Route B — stdio transport
 
-Use this when connecting from **Claude Desktop**, **Claude Code**, or any client that spawns the server process directly over stdin/stdout. No HTTP port, no session header — the client manages the connection.
+Use this with **Claude Desktop**, **Claude Code**, or any client that spawns the server process directly. No HTTP port, no session header — the client manages the lifecycle.
 
-### Start the server (manual test)
-
-```bash
-npm run start
-# [MCP] Server started on stdio transport
-```
-
-The process reads JSON-RPC from stdin and writes responses to stdout. You won't interact with it manually — your MCP client does.
+The server process reads JSON-RPC from stdin and writes responses to stdout. Set `MCP_TRANSPORT=stdio` (the default when using `npm run start`).
 
 ### Configure Claude Desktop
 
-Edit the Claude Desktop config file:
+Edit the config file for your OS:
 
-- **macOS**: `~/Library/Application Support/Claude/claude_desktop_config.json`
-- **Linux**: `~/.config/Claude/claude_desktop_config.json`
-- **Windows**: `%APPDATA%\Claude\claude_desktop_config.json`
+| OS | Path |
+| -- | ---- |
+| macOS | `~/Library/Application Support/Claude/claude_desktop_config.json` |
+| Linux | `~/.config/Claude/claude_desktop_config.json` |
+| Windows | `%APPDATA%\Claude\claude_desktop_config.json` |
 
 ```json
 {
@@ -168,7 +226,7 @@ Edit the Claude Desktop config file:
 
 Restart Claude Desktop. The `code-graph` tools appear in the tool panel automatically.
 
-### Configure VS Code Copilot (stdio process mode)
+### Connect VS Code Copilot (stdio process mode)
 
 Add to `.vscode/mcp.json` in your project:
 
@@ -193,49 +251,90 @@ Add to `.vscode/mcp.json` in your project:
 }
 ```
 
-> With stdio, the client sends `initialize` internally and manages the session. You still need to call `graph_set_workspace` and `graph_rebuild` once per session with the correct project path.
+> With stdio, the client sends `initialize` and manages the session internally. You still need to call `graph_set_workspace` and `graph_rebuild` once per session.
 
 ---
 
-## Step 3 — Point to a different project
+## 5. Add the agent instructions file
 
-Call `graph_set_workspace` again with a new `workspaceRoot` at any time. One server instance handles multiple projects across independent sessions.
-
----
-
-## Optional: inspect the graph directly
+Copy the provided instructions template into **your project** so your agent auto-initializes sessions and uses the right tool order without being told each time:
 
 ```bash
-docker compose exec memgraph memgraph-cli --exec "MATCH (f:FILE) RETURN count(f)"
-# Returns the number of indexed files
+mkdir -p /path/to/your-project/.github
+cp /path/to/code-graph-server/.github/copilot-instructions.md \
+   /path/to/your-project/.github/copilot-instructions.md
 ```
 
-Memgraph Lab UI is also available at `http://localhost:3000` when running the full Docker Compose stack.
+Edit the first few lines to reflect your project name and workspace path. The key behaviors it enforces:
+
+- Call `graph_set_workspace` + `graph_rebuild` at session start.
+- Use `graph_query` for discovery before reading files.
+- Use the correct path format for the runtime (`/workspace` for Docker, native path for host).
+
+VS Code reads `.github/copilot-instructions.md` automatically. Claude Desktop picks it up if you reference it in a system prompt.
 
 ---
 
-## Troubleshooting
+## 6. Persistent workspace defaults (optional)
+
+Set these env vars to skip the `graph_set_workspace` call — the server auto-initializes to this project on startup:
+
+```bash
+export CODE_GRAPH_WORKSPACE_ROOT=/path/to/your-project
+export GRAPH_SOURCE_DIR=/path/to/your-project/src   # optional sub-dir
+export CODE_GRAPH_PROJECT_ID=my-project
+```
+
+To index a **different project** at any time: call `graph_set_workspace` again with the new path. One server instance handles multiple projects across independent sessions.
+
+---
+
+## 7. Optional environment variables
+
+| Variable | Default | Description |
+| -------- | ------- | ----------- |
+| `CODE_GRAPH_USE_TREE_SITTER` | `false` | AST-accurate parsers for TS/TSX/JS/JSX/Python/Go/Rust/Java |
+| `CODE_GRAPH_WORKSPACE_ROOT` | — | Default workspace path on startup |
+| `CODE_GRAPH_PROJECT_ID` | `default` | Default project namespace |
+| `CODE_GRAPH_TARGET_WORKSPACE` | — | Host path mounted as `/workspace` in Docker Compose |
+| `CODE_GRAPH_ALLOW_RUNTIME_PATH_FALLBACK` | `false` | Allow host paths when running inside Docker |
+| `CODE_GRAPH_SUMMARIZER_URL` | — | OpenAI-compatible endpoint for indexing-time symbol summaries |
+| `MEMGRAPH_HOST` / `MEMGRAPH_PORT` | `localhost` / `7687` | Memgraph connection |
+| `QDRANT_HOST` / `QDRANT_PORT` | `localhost` / `6333` | Qdrant connection |
+| `MCP_PORT` | `9000` | HTTP server port |
+| `MCP_TRANSPORT` | `stdio` | `stdio` or `http` |
+| `LOG_LEVEL` | `info` | `error` / `warn` / `info` / `debug` |
+
+---
+
+## 8. Troubleshooting
 
 | Problem | Solution |
 | ------- | -------- |
 | `400` on MCP call | Missing or expired `mcp-session-id` (HTTP only); re-send `initialize` |
-| `graph_health` shows 0 symbols | `graph_rebuild` hasn't finished yet; wait 15 s and retry |
-| `Connection refused` on port 9000 | Server not running; `npm run start:http` |
+| `graph_health` shows 0 symbols | `graph_rebuild` hasn't finished; wait 15 s and retry |
+| `Connection refused` on port 9000 | Server not running; `npm run start:http` or `docker compose up -d` |
 | `Connection refused` on port 7687 | Memgraph not started; `docker compose up -d memgraph` |
-| Empty results on `graph_query` | Wrong `workspaceRoot`; verify the path matches the runtime (Docker: `/workspace`, host: native path) |
+| Empty results on `graph_query` | Wrong `workspaceRoot` — Docker needs `/workspace`, host needs native path |
+| Copilot shows no MCP tools | `.vscode/mcp.json` missing or invalid JSON; reload VS Code window |
 | Claude Desktop shows no tools | Config file path wrong or JSON invalid; restart Claude Desktop after fixing |
-| stdio server exits immediately | Check `MEMGRAPH_HOST`/`QDRANT_HOST` env vars; the server logs errors to stderr |
+| stdio server exits immediately | Check `MEMGRAPH_HOST`/`QDRANT_HOST` env vars; errors go to stderr |
+| `graph_rebuild` returns immediately | Normal — it's async; poll `graph_health` until `indexedSymbols > 0` |
 | Build fails | `npm install && npm run build`; check TypeScript errors |
 | Tree-sitter inactive | `export CODE_GRAPH_USE_TREE_SITTER=true` before starting the server |
+| `docs_index` not found (upgrade) | Run `graph_rebuild mode:full` once to create the missing index |
 
 ---
 
-## Next steps
+## Inspect the graph directly
 
-1. [SETUP.md](SETUP.md) — full VS Code / Copilot / Claude extension wiring
-2. [QUICK_REFERENCE.md](QUICK_REFERENCE.md) — all 35 tools with parameters
-3. [README.md](README.md) — capability overview
-4. [docs/GRAPH_EXPERT_AGENT.md](docs/GRAPH_EXPERT_AGENT.md) — agent runbook (tool priority, path rules, session patterns)
+```bash
+docker compose exec memgraph memgraph-cli --exec "MATCH (f:FILE) RETURN count(f)"
+```
+
+Memgraph Lab UI: `http://localhost:3000` (full Docker Compose stack only).
+
+---
 
 ## Total setup time
 
@@ -245,3 +344,12 @@ Memgraph Lab UI is also available at `http://localhost:3000` when running the fu
 | `npm install && npm run build` | ~1 min |
 | Graph index (medium repo) | 5–30 s |
 | First query | immediate |
+
+---
+
+## Next steps
+
+- [QUICK_REFERENCE.md](QUICK_REFERENCE.md) — all 35 tools with parameters
+- [README.md](README.md) — capability overview
+- [ARCHITECTURE.md](ARCHITECTURE.md) — technical internals
+- [docs/GRAPH_EXPERT_AGENT.md](docs/GRAPH_EXPERT_AGENT.md) — agent runbook (tool priority, path rules, response shaping)

@@ -15,8 +15,7 @@ LexRAG Server is your MCP-native memory and code intelligence layer for smarter,
 
 Turn your repository into a queryable graph so your agents can answer architecture, impact, and planning questions without re-reading the entire codebase on every turn — and so you can stop wasting context budget on files that haven't changed.
 
-**[→ SETUP.md](SETUP.md)** — full step-by-step: deploy, connect VS Code, wire Copilot or Claude, first query.  
-**[→ QUICK_START.md](QUICK_START.md)** — bare minimum curl session in ~5 minutes.  
+**[→ QUICK_START.md](QUICK_START.md)** — deploy, connect your editor, wire Copilot or Claude, first query (~5 min).  
 **[→ QUICK_REFERENCE.md](QUICK_REFERENCE.md)** — all 35 tools with parameters.
 
 ---
@@ -130,7 +129,7 @@ The server exposes **35 MCP tools** across:
 - Node.js 24+
 - Docker + Docker Compose
 
-> See [SETUP.md](SETUP.md) for full VS Code + Copilot/Claude wiring instructions.
+> See [QUICK_START.md](QUICK_START.md) for full VS Code + Copilot/Claude wiring instructions.
 
 ### 1) Install and build
 
@@ -302,7 +301,7 @@ See:
 
 - `.github/copilot-instructions.md`
 - `docs/GRAPH_EXPERT_AGENT.md`
-- [SETUP.md](SETUP.md): step-by-step deployment, VS Code project wiring, and Copilot / Claude extension configuration
+- [QUICK_START.md](QUICK_START.md): step-by-step deployment, VS Code project wiring, and Copilot / Claude extension configuration
 
 ## License
 
