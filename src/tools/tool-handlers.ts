@@ -729,11 +729,12 @@ export class ToolHandlers {
 
     try {
       await this.ensureEmbeddings();
+      const { projectId } = this.getActiveProjectContext();
       const topK = Math.max(1, Math.min(limit, 10));
       const [functions, classes, files] = await Promise.all([
-        this.embeddingEngine.findSimilar(query, "function", topK),
-        this.embeddingEngine.findSimilar(query, "class", topK),
-        this.embeddingEngine.findSimilar(query, "file", topK),
+        this.embeddingEngine.findSimilar(query, "function", topK, projectId),
+        this.embeddingEngine.findSimilar(query, "class", topK, projectId),
+        this.embeddingEngine.findSimilar(query, "file", topK, projectId),
       ]);
 
       return [...functions, ...classes, ...files]
@@ -2223,10 +2224,12 @@ export class ToolHandlers {
 
     try {
       await this.ensureEmbeddings();
+      const { projectId } = this.getActiveProjectContext();
       const results = await this.embeddingEngine!.findSimilar(
         query,
         type,
         limit,
+        projectId,
       );
 
       return this.formatSuccess(
@@ -2258,10 +2261,12 @@ export class ToolHandlers {
 
     try {
       await this.ensureEmbeddings();
+      const { projectId } = this.getActiveProjectContext();
       const results = await this.embeddingEngine!.findSimilar(
         elementId,
         "function",
         limit,
+        projectId,
       );
       const filtered = results.slice(0, limit);
 
@@ -2293,8 +2298,9 @@ export class ToolHandlers {
 
     try {
       await this.ensureEmbeddings();
+      const { projectId } = this.getActiveProjectContext();
       const embeddings = this.embeddingEngine!.getAllEmbeddings()
-        .filter((item) => item.type === type)
+        .filter((item) => item.type === type && item.projectId === projectId)
         .slice(0, 200);
 
       const clusters: Record<string, string[]> = {};
