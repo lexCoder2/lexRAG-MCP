@@ -1,4 +1,4 @@
-# lexRAG MCP
+# lxRAG MCP
 
 A graph-powered code intelligence server.
 
@@ -18,7 +18,7 @@ Start the HTTP server:
 
 ```typescript
 import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
-const server = new McpServer({ name: "lexRAG-MCP", version: "1.0.0" });
+const server = new McpServer({ name: "lxRAG-MCP", version: "1.0.0" });
 ```
 
 Use the `graph_rebuild` tool to index your project. The `GraphOrchestrator` handles

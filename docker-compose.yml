@@ -1,7 +1,7 @@
 services:
   memgraph:
     image: memgraph/memgraph-mage:latest
-    container_name: lexRAG-memgraph
+    container_name: lxRAG-memgraph
     ports:
       - "7687:7687"
       - "7444:7444"
@@ -25,7 +25,7 @@ services:
 
   qdrant:
     image: qdrant/qdrant:latest
-    container_name: lexRAG-qdrant
+    container_name: lxRAG-qdrant
     ports:
       - "6333:6333"
       - "6334:6334"
@@ -37,7 +37,7 @@ services:
 
   memgraph-lab:
     image: memgraph/lab:latest
-    container_name: lexRAG-memgraph-lab
+    container_name: lxRAG-memgraph-lab
     ports:
       - "3000:3000"
     environment:
@@ -52,7 +52,7 @@ services:
     build:
       context: .
       dockerfile: Dockerfile.dev
-    container_name: lexRAG-mcp
+    container_name: lxRAG-mcp
     ports:
       - "9000:9000"
       - "9001:9001"
@@ -65,9 +65,9 @@ services:
       - QDRANT_HOST=qdrant
       - QDRANT_PORT=6333
       - LOG_LEVEL=info
-      - LEXRAG_WORKSPACE_ROOT=/workspace
+      - LXRAG_WORKSPACE_ROOT=/workspace
       - GRAPH_SOURCE_DIR=/workspace/src
-      - LEXRAG_PROJECT_ID=${LEXRAG_PROJECT_ID:-lexRAG-default}
+      - LXRAG_PROJECT_ID=${LXRAG_PROJECT_ID:-lxRAG-default}
     volumes:
       - ./src:/app/src
       - ./package.json:/app/package.json
@@ -94,6 +94,6 @@ services:
 
 volumes:
   memgraph_data:
-    name: lexrag_memgraph_data
+    name: lxrag_memgraph_data
   qdrant_data:
-    name: lexrag_qdrant_data
+    name: lxrag_qdrant_data

@@ -61,7 +61,7 @@ async function initialize() {
 
 // Server implementation info
 const serverInfo = {
-  name: env.LEXRAG_SERVER_NAME,
+  name: env.LXRAG_SERVER_NAME,
   version: "1.0.0",
 };
 
@@ -1680,7 +1680,7 @@ async function main() {
     // Allows A2A-aware orchestrators (LangGraph, AutoGen, etc.) to discover
     // this server as a memory + coordination specialist agent.
     app.get("/.well-known/agent.json", (_req: any, res: any) => {
-      const serverName = env.LEXRAG_SERVER_NAME;
+      const serverName = env.LXRAG_SERVER_NAME;
       res.status(200).json({
         "@context": "https://schema.a2aprotocol.dev/v1",
         "@type": "Agent",

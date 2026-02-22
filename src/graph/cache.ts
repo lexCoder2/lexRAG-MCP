@@ -22,7 +22,7 @@ export class CacheManager {
   private cachePath: string;
   private cache: CacheData;
 
-  constructor(cacheDir: string = ".lexrag/cache") {
+  constructor(cacheDir: string = ".lxrag/cache") {
     this.cachePath = path.join(process.cwd(), cacheDir, "file-hashes.json");
     this.cache = this.loadCache();
   }

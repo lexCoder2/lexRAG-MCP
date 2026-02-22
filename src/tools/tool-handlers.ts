@@ -107,9 +107,9 @@ export class ToolHandlers {
   }
 
   private defaultProjectContext(): ProjectContext {
-    const workspaceRoot = env.LEXRAG_WORKSPACE_ROOT;
+    const workspaceRoot = env.LXRAG_WORKSPACE_ROOT;
     const sourceDir = env.GRAPH_SOURCE_DIR;
-    const projectId = env.LEXRAG_PROJECT_ID;
+    const projectId = env.LXRAG_PROJECT_ID;
 
     return {
       workspaceRoot,
@@ -135,7 +135,7 @@ export class ToolHandlers {
       overrides.projectId ||
       (workspaceProvided
         ? path.basename(workspaceRoot)
-        : env.LEXRAG_PROJECT_ID) ||
+        : env.LXRAG_PROJECT_ID) ||
       path.basename(workspaceRoot);
 
     return {
@@ -154,7 +154,7 @@ export class ToolHandlers {
       return { context, usedFallback: false };
     }
 
-    const fallbackRoot = env.LEXRAG_WORKSPACE_ROOT;
+    const fallbackRoot = env.LXRAG_WORKSPACE_ROOT;
     if (!fallbackRoot || !fs.existsSync(fallbackRoot)) {
       return { context, usedFallback: false };
     }
@@ -184,11 +184,11 @@ export class ToolHandlers {
   }
 
   private runtimePathFallbackAllowed(): boolean {
-    return env.LEXRAG_ALLOW_RUNTIME_PATH_FALLBACK;
+    return env.LXRAG_ALLOW_RUNTIME_PATH_FALLBACK;
   }
 
   private watcherEnabledForRuntime(): boolean {
-    return env.MCP_TRANSPORT === "http" || env.LEXRAG_ENABLE_WATCHER;
+    return env.MCP_TRANSPORT === "http" || env.LXRAG_ENABLE_WATCHER;
   }
 
   private watcherKey(): string {
@@ -223,7 +223,7 @@ export class ToolHandlers {
         sourceDir: context.sourceDir,
         projectId: context.projectId,
         debounceMs: 500,
-        ignorePatterns: env.LEXRAG_IGNORE_PATTERNS,
+        ignorePatterns: env.LXRAG_IGNORE_PATTERNS,
       },
       async ({ projectId, workspaceRoot, sourceDir, changedFiles }) => {
         await this.runWatcherIncrementalRebuild({
@@ -276,7 +276,7 @@ export class ToolHandlers {
         "node_modules",
         "dist",
         ".next",
-        ".lexrag",
+        ".lxrag",
         "__tests__",
         "coverage",
         ".git",
@@ -331,9 +331,9 @@ export class ToolHandlers {
       console.warn("[ToolHandlers] Qdrant connection skipped:", error);
     });
 
-    if (!env.LEXRAG_SUMMARIZER_URL) {
+    if (!env.LXRAG_SUMMARIZER_URL) {
       console.warn(
-        "[summarizer] LEXRAG_SUMMARIZER_URL is not set. " +
+        "[summarizer] LXRAG_SUMMARIZER_URL is not set. " +
           "Heuristic local summaries will be used, reducing vector search quality and " +
           "compact-profile accuracy. " +
           "Point this to an OpenAI-compatible /v1/chat/completions endpoint for production use.",
@@ -1430,7 +1430,7 @@ export class ToolHandlers {
       if (String(status || "").toLowerCase() === "completed") {
         const sessionId = this.getCurrentSessionId() || "session-unknown";
         const runtimeAgentId = String(
-          assignee || args?.agentId || env.LEXRAG_AGENT_ID,
+          assignee || args?.agentId || env.LXRAG_AGENT_ID,
         );
         const { projectId } = this.getActiveProjectContext();
 
@@ -1559,7 +1559,7 @@ export class ToolHandlers {
           "WORKSPACE_PATH_SANDBOXED",
           `Requested workspaceRoot is not accessible from this runtime: ${nextContext.workspaceRoot}`,
           true,
-          "Mount the target project into the container (e.g. LEXRAG_TARGET_WORKSPACE) and restart docker-compose, or set LEXRAG_ALLOW_RUNTIME_PATH_FALLBACK=true to force fallback to mounted workspace.",
+          "Mount the target project into the container (e.g. LXRAG_TARGET_WORKSPACE) and restart docker-compose, or set LXRAG_ALLOW_RUNTIME_PATH_FALLBACK=true to force fallback to mounted workspace.",
         );
       }
 
@@ -1646,7 +1646,7 @@ export class ToolHandlers {
           "WORKSPACE_PATH_SANDBOXED",
           `Requested workspaceRoot is not accessible from this runtime: ${resolvedContext.workspaceRoot}`,
           true,
-          "Mount the target project into the container (e.g. LEXRAG_TARGET_WORKSPACE) and restart docker-compose, or set LEXRAG_ALLOW_RUNTIME_PATH_FALLBACK=true to force fallback to mounted workspace.",
+          "Mount the target project into the container (e.g. LXRAG_TARGET_WORKSPACE) and restart docker-compose, or set LXRAG_ALLOW_RUNTIME_PATH_FALLBACK=true to force fallback to mounted workspace.",
         );
       }
 
@@ -1705,7 +1705,7 @@ export class ToolHandlers {
             "node_modules",
             "dist",
             ".next",
-            ".lexrag",
+            ".lxrag",
             "__tests__",
             "coverage",
             ".git",
@@ -1832,8 +1832,8 @@ export class ToolHandlers {
             mode: this.hybridRetriever?.bm25Mode ?? "not_initialized",
           },
           summarizer: {
-            configured: !!env.LEXRAG_SUMMARIZER_URL,
-            endpoint: env.LEXRAG_SUMMARIZER_URL ? "[configured]" : null,
+            configured: !!env.LXRAG_SUMMARIZER_URL,
+            endpoint: env.LXRAG_SUMMARIZER_URL ? "[configured]" : null,
           },
           rebuild: {
             lastRequestedAt: this.lastGraphRebuildAt || null,
@@ -2280,7 +2280,7 @@ export class ToolHandlers {
 
     try {
       const contextSessionId = this.getCurrentSessionId() || "session-unknown";
-      const runtimeAgentId = String(agentId || env.LEXRAG_AGENT_ID);
+      const runtimeAgentId = String(agentId || env.LXRAG_AGENT_ID);
       const { projectId } = this.getActiveProjectContext();
 
       const episodeId = await this.episodeEngine!.add(
@@ -2468,7 +2468,7 @@ export class ToolHandlers {
 
     try {
       const runtimeSessionId = this.getCurrentSessionId() || "session-unknown";
-      const runtimeAgentId = String(agentId || env.LEXRAG_AGENT_ID);
+      const runtimeAgentId = String(agentId || env.LXRAG_AGENT_ID);
       const { projectId } = this.getActiveProjectContext();
 
       const result = await this.coordinationEngine!.claim({
@@ -2596,7 +2596,7 @@ export class ToolHandlers {
     }
 
     try {
-      const runtimeAgentId = String(agentId || env.LEXRAG_AGENT_ID);
+      const runtimeAgentId = String(agentId || env.LXRAG_AGENT_ID);
       const { projectId, workspaceRoot } = this.getActiveProjectContext();
 
       const seedIds = this.findSeedNodeIds(task, 5);

@@ -78,10 +78,10 @@ export class GraphBuilder {
     txTimestamp?: number,
   ) {
     this.workspaceRoot =
-      workspaceRoot || env.LEXRAG_WORKSPACE_ROOT || process.cwd();
+      workspaceRoot || env.LXRAG_WORKSPACE_ROOT || process.cwd();
     this.projectId =
-      projectId || env.LEXRAG_PROJECT_ID || path.basename(this.workspaceRoot);
-    this.txId = txId || env.LEXRAG_TX_ID || `tx-${Date.now()}`;
+      projectId || env.LXRAG_PROJECT_ID || path.basename(this.workspaceRoot);
+    this.txId = txId || env.LXRAG_TX_ID || `tx-${Date.now()}`;
     this.txTimestamp = txTimestamp || Date.now();
   }
 

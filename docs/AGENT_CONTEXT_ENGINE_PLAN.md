@@ -1,6 +1,6 @@
 # Agent Context Engine — Implementation Plan
 
-> **Vision**: Make `lexRAG-MCP` the external long-term memory and coordination layer for any fleet of LLM agents. Agents stop spending tokens re-reading code, re-arguing about decisions, or losing state between calls. They query the tool, get exactly what they need in the smallest possible package, and execute.
+> **Vision**: Make `lxRAG-MCP` the external long-term memory and coordination layer for any fleet of LLM agents. Agents stop spending tokens re-reading code, re-arguing about decisions, or losing state between calls. They query the tool, get exactly what they need in the smallest possible package, and execute.
 
 ---
 
@@ -175,7 +175,7 @@ This replaces UUID-based IDs in the builder and becomes the primary identifier f
 
 ### 0.3 Key Differentiator vs Existing Systems
 
-| Dimension                | GraphRAG               | LightRAG               | Graphiti                     | **lexRAG-MCP (target)**                                    |
+| Dimension                | GraphRAG               | LightRAG               | Graphiti                     | **lxRAG-MCP (target)**                                    |
 | ------------------------ | ---------------------- | ---------------------- | ---------------------------- | ---------------------------------------------------------- |
 | Domain                   | General text           | General text           | Conversation/enterprise data | **Source code**                                            |
 | Graph structure          | LLM-extracted entities | LLM-extracted entities | Episodic memory + entities   | **AST-precise** (functions, classes, imports, call graphs) |
@@ -220,7 +220,7 @@ Phase 4 adds: `GET /.well-known/agent.json` endpoint serving a static Agent Card
 {
   "@context": "https://schema.a2aprotocol.dev/v1",
   "@type": "Agent",
-  "name": "lexRAG-MCP",
+  "name": "lxRAG-MCP",
   "description": "External long-term memory and coordination layer for LLM agent fleets working on software codebases.",
   "capabilities": [
     "code-graph",
@@ -314,7 +314,7 @@ There is no way to say "what did the codebase look like when we started task T?"
        └──────────────┴──────────────┴──────────────┘
                              │  MCP (HTTP)
               ┌──────────────▼──────────────────────┐
-              │           lexRAG-MCP               │
+              │           lxRAG-MCP               │
               │                                      │
               │  ┌─────────────────────────────────┐ │
               │  │       Tool Surface (~34 tools)  │ │

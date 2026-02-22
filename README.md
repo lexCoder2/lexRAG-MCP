@@ -1,8 +1,12 @@
 <div align="center">
-  <img src="docs/brain-logo.svg" alt="lexRAG MCP Logo" width="200" />
-  <h1>LexRAG MCP</h1>
-  <p>A memory and code intelligence layer for software agents.</p>  
+  <img src="docs/brain-logo.svg" alt="lxRAG MCP Logo" width="200" />
+  <br/>
+  <big><big><strong>LxRAG MCP</strong></big></big>
+  <p><em>short for <strong>lexic RAG</strong></em></p>
+  <p>A memory and code intelligence layer for LLM agents.</p>
 </div>
+
+<div align="center">
 
 ![MCP](https://img.shields.io/badge/MCP-JSON--RPC%202.0-7A52F4)
 ![Transport](https://img.shields.io/badge/Transport-stdio%20%7C%20http-0EA5E9)
@@ -11,9 +15,11 @@
 ![Graph](https://img.shields.io/badge/Graph-Memgraph-00B894)
 ![License](https://img.shields.io/badge/License-MIT-F59E0B)
 
+</div>
+
 ---
 
-LexRAG Server is your MCP-native memory and code intelligence layer for smarter, faster AI-assisted development.
+LxRAG Server is your MCP-native memory and code intelligence layer for smarter, faster AI-assisted development.
 
 Turn your repository into a queryable graph so your agents can answer architecture, impact, and planning questions without re-reading the entire codebase on every turn — and so you can stop wasting context budget on files that haven't changed.
 
@@ -62,9 +68,9 @@ Three critical gaps plague existing code intelligence solutions:
 - ❌ No built-in code graph (manual context assembly wastes tokens)
 - ❌ No temporal reasoning or persistent episode memory
 
-### The LexRAG Advantage
+### The LxRAG Advantage
 
-LexRAG uniquely combines all three layers purpose-built for code:
+LxRAG uniquely combines all three layers purpose-built for code:
 
 **1. Graph Structure — not RAG embeddings**
 
@@ -99,7 +105,7 @@ LexRAG uniquely combines all three layers purpose-built for code:
 
 ### vs The Competition
 
-| Capability                  | LexRAG                 | CodeRabbit    | GitHub Copilot  | LangChain + Embeddings | Neo4j            |
+| Capability                  | LxRAG                  | CodeRabbit    | GitHub Copilot  | LangChain + Embeddings | Neo4j            |
 | --------------------------- | ---------------------- | ------------- | --------------- | ---------------------- | ---------------- |
 | **Session persistence**     | ✅ Native              | ❌ PR-scoped  | ❌ No           | ⚠️ Setup required      | ❌ No            |
 | **Agent memory**            | ✅ Episodes + temporal | ❌ No         | ❌ No           | ⚠️ LangMem extra       | ❌ No            |
@@ -137,7 +143,7 @@ Your agent remembers what it decided, what it changed, and what broke — even a
 
 ### 3) Smarter test runs
 
-Stop running your full test suite on every change. LexRAG tells your agent exactly which tests are affected.
+Stop running your full test suite on every change. LxRAG tells your agent exactly which tests are affected.
 
 - Impact analysis scoped to changed files (`impact_analyze`)
 - Selective test execution — only tests that can actually fail (`test_select`, `test_run`)
@@ -160,7 +166,7 @@ Your READMEs, architecture decision records, and changelogs become first-class s
 
 ## How it works
 
-LexRAG runs as an MCP server over stdio or HTTP and coordinates three data planes behind a single tool interface:
+LxRAG runs as an MCP server over stdio or HTTP and coordinates three data planes behind a single tool interface:
 
 - **Graph plane (Memgraph)** — structural and temporal truth: FILE, FUNCTION, CLASS, IMPORT nodes + relationships + full transaction history
 - **Vector plane (Qdrant)** — semantic retrieval for natural-language questions; optional but recommended for large codebases
@@ -207,8 +213,8 @@ The server exposes **38 MCP tools** across:
 ### 1) Clone and build
 
 ```bash
-git clone https://github.com/lexCoder2/lexRAG-MCP.git
-cd lexRAG-MCP
+git clone https://github.com/lexCoder2/lxRAG-MCP.git
+cd lxRAG-MCP
 npm install && npm run build
 ```
 
@@ -233,10 +239,10 @@ docker compose ps memgraph qdrant   # both should show "healthy" / "running"
 ```json
 {
   "servers": {
-    "lexrag": {
+    "lxrag": {
       "type": "stdio",
       "command": "node",
-      "args": ["/absolute/path/to/lexRAG-MCP/dist/server.js"],
+      "args": ["/absolute/path/to/lxRAG-MCP/dist/server.js"],
       "env": {
         "MCP_TRANSPORT": "stdio",
         "MEMGRAPH_HOST": "localhost",
@@ -254,9 +260,9 @@ docker compose ps memgraph qdrant   # both should show "healthy" / "running"
 ```json
 {
   "mcpServers": {
-    "lexrag": {
+    "lxrag": {
       "command": "node",
-      "args": ["/absolute/path/to/lexRAG-MCP/dist/server.js"],
+      "args": ["/absolute/path/to/lxRAG-MCP/dist/server.js"],
       "env": {
         "MCP_TRANSPORT": "stdio",
         "MEMGRAPH_HOST": "localhost",
@@ -372,7 +378,7 @@ npm test               # run all 109 tests
 Every feature below is production-ready today:
 
 - ✅ Hybrid retrieval for `graph_query` — vector + BM25 + graph expansion fused with RRF
-- ✅ AST-accurate parsers via tree-sitter for TypeScript, TSX, JS/MJS/CJS, JSX, Python, Go, Rust, Java (activate with `LEXRAG_USE_TREE_SITTER=true`)
+- ✅ AST-accurate parsers via tree-sitter for TypeScript, TSX, JS/MJS/CJS, JSX, Python, Go, Rust, Java (activate with `LXRAG_USE_TREE_SITTER=true`)
 - ✅ Watcher-driven incremental rebuilds — your graph stays fresh without manual intervention
 - ✅ Temporal query and diff support — query any past graph state with `asOf`, compare changes with `diff_since`
 - ✅ Indexing-time symbol summarization — compact-profile answers stay useful even in tight token budgets
@@ -384,7 +390,7 @@ Every feature below is production-ready today:
 ## Release highlights
 
 - **Hybrid natural retrieval** — your `graph_query` calls blend vector, BM25, and graph signals with RRF so you get the most relevant results across the whole codebase, not just the closest embedding match.
-- **Multi-language AST parsers** — tree-sitter gives you accurate symbol extraction for TypeScript, TSX, JavaScript, JSX, Python, Go, Rust, and Java. Enable with `LEXRAG_USE_TREE_SITTER=true`; each language falls back gracefully if the grammar isn't installed.
+- **Multi-language AST parsers** — tree-sitter gives you accurate symbol extraction for TypeScript, TSX, JavaScript, JSX, Python, Go, Rust, and Java. Enable with `LXRAG_USE_TREE_SITTER=true`; each language falls back gracefully if the grammar isn't installed.
 - **Impact-scoped test runs** — `impact_analyze` + `test_select` tell your agent exactly which tests to run after a change, cutting unnecessary CI time without sacrificing coverage confidence.
 - **Docs & ADR indexing** — your documentation is now searchable the same way your code is. `index_docs` walks the workspace, parses every markdown file into `DOCUMENT` and `SECTION` nodes, and stores them in the graph. `search_docs` retrieves them by text query or by symbol association.
 - **Persistent agent memory** — episodes, decisions, and claims survive across VS Code restarts so your agent can pick up exactly where it left off.
@@ -435,11 +441,11 @@ Pull requests are welcome! Whether it's a new parser, a tool improvement, a bug 
 - **New tools** — follow the handler + registration pattern in `src/tools/tool-handlers.ts` and `src/server.ts`; include tests
 - **Docs** — typos, clarifications, and examples are always appreciated
 
-[→ Open a pull request](https://github.com/lexCoder2/lexRAG-MCP/pulls)
+[→ Open a pull request](https://github.com/lexCoder2/lxRAG-MCP/pulls)
 
 ## Support this project
 
-LexRAG MCP is built and maintained in my personal time — researching graph retrieval techniques, designing the tool surface, writing tests, and keeping everything working across MCP protocol updates. a cup of coffe or any help you can provide will make a difference, If it saves you time or makes your AI-assisted workflows meaningfully better, consider supporting the work:
+LxRAG MCP is built and maintained in my personal time — researching graph retrieval techniques, designing the tool surface, writing tests, and keeping everything working across MCP protocol updates. a cup of coffe or any help you can provide will make a difference, If it saves you time or makes your AI-assisted workflows meaningfully better, consider supporting the work:
 
 - **GitHub Sponsors** → [github.com/sponsors/lexCoder2](https://github.com/sponsors/lexCoder2)
 - **Buy Me a Coffee** → [buymeacoffee.com/hi8g](https://buymeacoffee.com/hi8g)

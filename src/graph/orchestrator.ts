@@ -89,7 +89,7 @@ export class GraphOrchestrator {
 
     // ── Tree-sitter TypeScript / TSX ────────────────────────────────────────
     // Enable when CODE_GRAPH_USE_TREE_SITTER=true AND native binding compiled.
-    const wantTsTs = env.LEXRAG_USE_TREE_SITTER;
+    const wantTsTs = env.LXRAG_USE_TREE_SITTER;
     const tsAvailability = checkTsTreeSitterAvailability();
     this.useTsTreeSitter = false;
     if (wantTsTs) {
@@ -172,7 +172,7 @@ export class GraphOrchestrator {
     this.cache = new CacheManager();
     this.memgraph = memgraph || new MemgraphClient();
     this.verbose = verbose;
-    this.summarizer = new CodeSummarizer(env.LEXRAG_SUMMARIZER_URL);
+    this.summarizer = new CodeSummarizer(env.LXRAG_SUMMARIZER_URL);
   }
 
   /**
@@ -183,13 +183,13 @@ export class GraphOrchestrator {
     const opts: BuildOptions = {
       mode: options.mode || "incremental",
       verbose: options.verbose ?? this.verbose,
-      workspaceRoot: options.workspaceRoot || env.LEXRAG_WORKSPACE_ROOT,
+      workspaceRoot: options.workspaceRoot || env.LXRAG_WORKSPACE_ROOT,
       projectId:
         options.projectId ||
-        env.LEXRAG_PROJECT_ID ||
-        path.basename(options.workspaceRoot || env.LEXRAG_WORKSPACE_ROOT),
+        env.LXRAG_PROJECT_ID ||
+        path.basename(options.workspaceRoot || env.LXRAG_WORKSPACE_ROOT),
       sourceDir: options.sourceDir || "src",
-      exclude: options.exclude || ["node_modules", "dist", ".next", ".lexrag"],
+      exclude: options.exclude || ["node_modules", "dist", ".next", ".lxrag"],
       txId: options.txId,
       txTimestamp: options.txTimestamp,
     };

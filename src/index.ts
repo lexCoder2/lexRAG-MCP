@@ -1,5 +1,5 @@
 /**
- * lexRAG MCP — stdio entry point (legacy)
+ * lxRAG MCP — stdio entry point (legacy)
  *
  * Thin stdio wrapper around ToolHandlers. For the full HTTP server (all 33
  * tools, multi-session, Streamable HTTP transport) use `src/server.ts` via
@@ -65,7 +65,7 @@ class CodeGraphServer {
 
   constructor() {
     this.mcpServer = new McpServer({
-      name: env.LEXRAG_SERVER_NAME,
+      name: env.LXRAG_SERVER_NAME,
       version: "1.0.0",
     });
 

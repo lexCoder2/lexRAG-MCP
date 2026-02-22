@@ -17,15 +17,15 @@ dotenv.config();
 
 /**
  * Absolute path to the workspace being indexed.
- * Env: LEXRAG_WORKSPACE_ROOT
+ * Env: LXRAG_WORKSPACE_ROOT
  * Default: process.cwd()
  */
-export const LEXRAG_WORKSPACE_ROOT: string = path.resolve(
-  process.env.LEXRAG_WORKSPACE_ROOT || process.cwd(),
+export const LXRAG_WORKSPACE_ROOT: string = path.resolve(
+  process.env.LXRAG_WORKSPACE_ROOT || process.cwd(),
 );
 
 // Alias for backward compatibility
-export const CODE_GRAPH_WORKSPACE_ROOT = LEXRAG_WORKSPACE_ROOT;
+export const CODE_GRAPH_WORKSPACE_ROOT = LXRAG_WORKSPACE_ROOT;
 
 /**
  * Source sub-directory to index. Can be absolute or relative to WORKSPACE_ROOT.
@@ -34,28 +34,28 @@ export const CODE_GRAPH_WORKSPACE_ROOT = LEXRAG_WORKSPACE_ROOT;
  */
 export const GRAPH_SOURCE_DIR: string = (() => {
   const raw =
-    process.env.GRAPH_SOURCE_DIR || path.join(LEXRAG_WORKSPACE_ROOT, "src");
-  return path.isAbsolute(raw) ? raw : path.resolve(LEXRAG_WORKSPACE_ROOT, raw);
+    process.env.GRAPH_SOURCE_DIR || path.join(LXRAG_WORKSPACE_ROOT, "src");
+  return path.isAbsolute(raw) ? raw : path.resolve(LXRAG_WORKSPACE_ROOT, raw);
 })();
 
 /**
  * Logical project identifier used as a namespace in the graph.
- * Env: LEXRAG_PROJECT_ID
- * Default: basename of LEXRAG_WORKSPACE_ROOT
+ * Env: LXRAG_PROJECT_ID
+ * Default: basename of LXRAG_WORKSPACE_ROOT
  */
-export const LEXRAG_PROJECT_ID: string =
-  process.env.LEXRAG_PROJECT_ID || path.basename(LEXRAG_WORKSPACE_ROOT);
+export const LXRAG_PROJECT_ID: string =
+  process.env.LXRAG_PROJECT_ID || path.basename(LXRAG_WORKSPACE_ROOT);
 
 // Alias for backward compatibility
-export const CODE_GRAPH_PROJECT_ID = LEXRAG_PROJECT_ID;
+export const CODE_GRAPH_PROJECT_ID = LXRAG_PROJECT_ID;
 
 /**
  * Transaction ID for graph write operations.
- * Env: LEXRAG_TX_ID
+ * Env: LXRAG_TX_ID
  * Default: undefined (callers generate a fresh `tx-<timestamp>` per invocation)
  */
-export const LEXRAG_TX_ID: string | undefined =
-  process.env.LEXRAG_TX_ID || undefined;
+export const LXRAG_TX_ID: string | undefined =
+  process.env.LXRAG_TX_ID || undefined;
 
 // ── MCP Transport ─────────────────────────────────────────────────────────────
 
@@ -76,14 +76,14 @@ export const MCP_PORT: number = parseInt(process.env.MCP_PORT || "9000", 10);
 
 /**
  * Display name reported by the MCP server.
- * Env: LEXRAG_SERVER_NAME
- * Default: "lexRAG MCP"
+ * Env: LXRAG_SERVER_NAME
+ * Default: "lxRAG MCP"
  */
-export const LEXRAG_SERVER_NAME: string =
-  process.env.LEXRAG_SERVER_NAME || "lexRAG MCP";
+export const LXRAG_SERVER_NAME: string =
+  process.env.LXRAG_SERVER_NAME || "lxRAG MCP";
 
 // Alias for backward compatibility
-export const CODE_GRAPH_SERVER_NAME = LEXRAG_SERVER_NAME;
+export const CODE_GRAPH_SERVER_NAME = LXRAG_SERVER_NAME;
 
 // ── Memgraph (graph database) ─────────────────────────────────────────────────
 
@@ -128,80 +128,80 @@ export const QDRANT_PORT: number = parseInt(
 /**
  * URL of the optional LLM summarizer service (e.g. http://localhost:8080).
  * When undefined, summarization is disabled and heuristic summaries are used.
- * Env: LEXRAG_SUMMARIZER_URL
+ * Env: LXRAG_SUMMARIZER_URL
  */
-export const LEXRAG_SUMMARIZER_URL: string | undefined =
-  process.env.LEXRAG_SUMMARIZER_URL || undefined;
+export const LXRAG_SUMMARIZER_URL: string | undefined =
+  process.env.LXRAG_SUMMARIZER_URL || undefined;
 
 // Alias for backward compatibility
-export const CODE_GRAPH_SUMMARIZER_URL = LEXRAG_SUMMARIZER_URL;
+export const CODE_GRAPH_SUMMARIZER_URL = LXRAG_SUMMARIZER_URL;
 
 // ── Agent / Coordination ──────────────────────────────────────────────────────
 
 /**
  * Identifier for the current agent instance used in coordination claims.
- * Env: LEXRAG_AGENT_ID
+ * Env: LXRAG_AGENT_ID
  * Default: "agent-local"
  */
-export const LEXRAG_AGENT_ID: string =
-  process.env.LEXRAG_AGENT_ID || "agent-local";
+export const LXRAG_AGENT_ID: string =
+  process.env.LXRAG_AGENT_ID || "agent-local";
 
 // Alias for backward compatibility
-export const CODE_GRAPH_AGENT_ID = LEXRAG_AGENT_ID;
+export const CODE_GRAPH_AGENT_ID = LXRAG_AGENT_ID;
 
 // ── Parser ────────────────────────────────────────────────────────────────────
 
 /**
  * Set to true to use the Tree-sitter parser instead of the regex parser.
- * Env: LEXRAG_USE_TREE_SITTER
+ * Env: LXRAG_USE_TREE_SITTER
  * Default: false
  */
-export const LEXRAG_USE_TREE_SITTER: boolean =
-  process.env.LEXRAG_USE_TREE_SITTER === "true";
+export const LXRAG_USE_TREE_SITTER: boolean =
+  process.env.LXRAG_USE_TREE_SITTER === "true";
 
 // Alias for backward compatibility
-export const CODE_GRAPH_USE_TREE_SITTER = LEXRAG_USE_TREE_SITTER;
+export const CODE_GRAPH_USE_TREE_SITTER = LXRAG_USE_TREE_SITTER;
 
 // ── File Watcher ──────────────────────────────────────────────────────────────
 
 /**
  * Enables incremental file-change watching.
  * Automatically considered true when MCP_TRANSPORT=http.
- * Env: LEXRAG_ENABLE_WATCHER
+ * Env: LXRAG_ENABLE_WATCHER
  * Default: false
  */
-export const LEXRAG_ENABLE_WATCHER: boolean =
-  process.env.LEXRAG_ENABLE_WATCHER === "true";
+export const LXRAG_ENABLE_WATCHER: boolean =
+  process.env.LXRAG_ENABLE_WATCHER === "true";
 
 // Alias for backward compatibility
-export const CODE_GRAPH_ENABLE_WATCHER = LEXRAG_ENABLE_WATCHER;
+export const CODE_GRAPH_ENABLE_WATCHER = LXRAG_ENABLE_WATCHER;
 
 /**
  * Comma-separated glob patterns to exclude from indexing/watching.
- * Env: LEXRAG_IGNORE_PATTERNS
+ * Env: LXRAG_IGNORE_PATTERNS
  * Example: "node_modules/**,dist/**,.git/**"
  */
-export const LEXRAG_IGNORE_PATTERNS: string[] = (
-  process.env.LEXRAG_IGNORE_PATTERNS || ""
+export const LXRAG_IGNORE_PATTERNS: string[] = (
+  process.env.LXRAG_IGNORE_PATTERNS || ""
 )
   .split(",")
   .map((p) => p.trim())
   .filter(Boolean);
 
 // Alias for backward compatibility
-export const CODE_GRAPH_IGNORE_PATTERNS = LEXRAG_IGNORE_PATTERNS;
+export const CODE_GRAPH_IGNORE_PATTERNS = LXRAG_IGNORE_PATTERNS;
 
 // ── Path Fallback ─────────────────────────────────────────────────────────────
 
 /**
  * Allow the server to fall back to the mounted workspace path when the
  * requested path is not accessible (useful inside Docker containers).
- * Env: LEXRAG_ALLOW_RUNTIME_PATH_FALLBACK
+ * Env: LXRAG_ALLOW_RUNTIME_PATH_FALLBACK
  * Default: false
  */
-export const LEXRAG_ALLOW_RUNTIME_PATH_FALLBACK: boolean =
-  process.env.LEXRAG_ALLOW_RUNTIME_PATH_FALLBACK === "true";
+export const LXRAG_ALLOW_RUNTIME_PATH_FALLBACK: boolean =
+  process.env.LXRAG_ALLOW_RUNTIME_PATH_FALLBACK === "true";
 
 // Alias for backward compatibility
 export const CODE_GRAPH_ALLOW_RUNTIME_PATH_FALLBACK =
-  LEXRAG_ALLOW_RUNTIME_PATH_FALLBACK;
+  LXRAG_ALLOW_RUNTIME_PATH_FALLBACK;

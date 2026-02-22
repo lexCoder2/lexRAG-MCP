@@ -606,7 +606,7 @@ export class MCPServer {
 
   constructor() {
     this.server = new Server({
-      name: env.LEXRAG_SERVER_NAME,
+      name: env.LXRAG_SERVER_NAME,
       version: "1.0.0",
     });
 
@@ -627,7 +627,7 @@ export class MCPServer {
   }
 
   private loadConfig(): any {
-    const configPath = path.resolve(process.cwd(), ".lexrag/config.json");
+    const configPath = path.resolve(process.cwd(), ".lxrag/config.json");
     if (fs.existsSync(configPath)) {
       return JSON.parse(fs.readFileSync(configPath, "utf-8"));
     }

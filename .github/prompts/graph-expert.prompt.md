@@ -1,6 +1,6 @@
 ---
 name: graph-expert
-description: Graph Expert Agent for lexRAG MCP (session-aware, workspace-aware)
+description: Graph Expert Agent for lxRAG MCP (session-aware, workspace-aware)
 agent: graph-expert
 ---
 

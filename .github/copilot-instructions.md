@@ -1,12 +1,12 @@
-# Copilot Instructions - lexRAG MCP Server
+# Copilot Instructions - lxRAG MCP Server
 
-**Use this template for all projects working with lexRAG MCP.**
+**Use this template for all projects working with lxRAG MCP.**
 
 ---
 
 ## 🎯 Primary Goal
 
-Use lexRAG MCP for **ALL code intelligence**. Never fall back to file reads or grep.
+Use lxRAG MCP for **ALL code intelligence**. Never fall back to file reads or grep.
 
 ---
 
