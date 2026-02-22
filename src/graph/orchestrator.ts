@@ -1077,11 +1077,13 @@ export class GraphOrchestrator {
       statements.push({
         query: `
           MERGE (f:FEATURE {id: $id})
-          SET f.name = $name,
-              f.status = $status,
-              f.priority = $priority,
-              f.projectId = $projectId,
-              f.createdAt = timestamp()
+          ON CREATE SET
+            f.name = $name,
+            f.status = $status,
+            f.priority = $priority,
+            f.projectId = $projectId,
+            f.createdAt = timestamp()
+          ON MATCH DO NOTHING
         `,
         params: {
           id: `${projectId}:feature:${feature.id}`,
