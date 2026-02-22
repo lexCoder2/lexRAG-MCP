@@ -27,9 +27,7 @@ export class DocsBuilder {
     this.workspaceRoot =
       workspaceRoot ?? env.LEXRAG_WORKSPACE_ROOT ?? process.cwd();
     this.projectId =
-      projectId ??
-      env.LEXRAG_PROJECT_ID ??
-      path.basename(this.workspaceRoot);
+      projectId ?? env.LEXRAG_PROJECT_ID ?? path.basename(this.workspaceRoot);
     this.txId = txId ?? env.LEXRAG_TX_ID ?? `tx-${Date.now()}`;
     this.txTimestamp = txTimestamp ?? Date.now();
   }

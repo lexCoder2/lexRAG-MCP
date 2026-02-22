@@ -10,60 +10,60 @@
  *   npm run graph:build -- --verbose
  */
 
-import * as path from 'path';
-import * as fs from 'fs';
-import { GraphOrchestrator } from '../graph/orchestrator.js';
-import MemgraphClient from '../graph/client.js';
-import * as env from '../env.js';
+import * as path from "path";
+import * as fs from "fs";
+import { GraphOrchestrator } from "../graph/orchestrator.js";
+import MemgraphClient from "../graph/client.js";
+import * as env from "../env.js";
 
 async function main() {
   const args = process.argv.slice(2);
-  const isFullBuild = args.includes('--full');
-  const isVerbose = args.includes('--verbose');
+  const isFullBuild = args.includes("--full");
+  const isVerbose = args.includes("--verbose");
   const projectRoot = path.resolve(process.cwd());
 
-  console.log('🔨 Code Graph Builder');
+  console.log("🔨 Code Graph Builder");
   console.log(`📁 Project root: ${projectRoot}`);
-  console.log(`🔄 Build mode: ${isFullBuild ? 'FULL' : 'INCREMENTAL'}`);
-  console.log('');
+  console.log(`🔄 Build mode: ${isFullBuild ? "FULL" : "INCREMENTAL"}`);
+  console.log("");
 
   try {
     // Initialize Memgraph client
-    console.log('🔌 Connecting to Memgraph...');
+    console.log("🔌 Connecting to Memgraph...");
     const memgraph = new MemgraphClient({
       host: env.MEMGRAPH_HOST,
       port: env.MEMGRAPH_PORT,
     });
 
     await memgraph.connect();
-    console.log('✅ Connected to Memgraph\n');
+    console.log("✅ Connected to Memgraph\n");
 
     // Create orchestrator
     const orchestrator = new GraphOrchestrator(memgraph, isVerbose);
 
     // Build the graph
-    console.log('📊 Building code graph...\n');
+    console.log("📊 Building code graph...\n");
     const startTime = Date.now();
 
     const result = await orchestrator.build({
-      mode: isFullBuild ? 'full' : 'incremental',
+      mode: isFullBuild ? "full" : "incremental",
       verbose: isVerbose,
-      sourceDir: path.join(projectRoot, 'src'),
+      sourceDir: path.join(projectRoot, "src"),
       exclude: [
-        'node_modules/**',
-        'dist/**',
-        'build/**',
-        '.lexrag/**',
-        '**/*.test.ts',
-        '**/*.test.tsx',
-        '**/__tests__/**',
+        "node_modules/**",
+        "dist/**",
+        "build/**",
+        ".lexrag/**",
+        "**/*.test.ts",
+        "**/*.test.tsx",
+        "**/__tests__/**",
       ],
     });
 
     const duration = Date.now() - startTime;
 
     // Display results
-    console.log('\n📈 Build Results:');
+    console.log("\n📈 Build Results:");
     console.log(`   ✅ Success: ${result.success}`);
     console.log(`   ⏱️  Duration: ${(duration / 1000).toFixed(2)}s`);
     console.log(`   📄 Files processed: ${result.filesProcessed}`);
@@ -84,7 +84,7 @@ async function main() {
     }
 
     // Save build metadata
-    const codeGraphDir = path.join(projectRoot, '.lexrag');
+    const codeGraphDir = path.join(projectRoot, ".lexrag");
     if (!fs.existsSync(codeGraphDir)) {
       fs.mkdirSync(codeGraphDir, { recursive: true });
     }
@@ -92,7 +92,7 @@ async function main() {
     const metadata = {
       timestamp: new Date().toISOString(),
       duration,
-      mode: isFullBuild ? 'full' : 'incremental',
+      mode: isFullBuild ? "full" : "incremental",
       success: result.success,
       filesProcessed: result.filesProcessed,
       nodesCreated: result.nodesCreated,
@@ -100,23 +100,25 @@ async function main() {
     };
 
     fs.writeFileSync(
-      path.join(codeGraphDir, 'build.log.json'),
-      JSON.stringify(metadata, null, 2)
+      path.join(codeGraphDir, "build.log.json"),
+      JSON.stringify(metadata, null, 2),
     );
 
-    console.log('\n✨ Build complete!');
-    console.log('   View graph at: http://localhost:3000 (Memgraph Lab)');
-    console.log('   Query graph: npm run graph:query "MATCH (f:FILE) RETURN count(f)"');
+    console.log("\n✨ Build complete!");
+    console.log("   View graph at: http://localhost:3000 (Memgraph Lab)");
+    console.log(
+      '   Query graph: npm run graph:query "MATCH (f:FILE) RETURN count(f)"',
+    );
 
     // Exit with appropriate code
     process.exit(result.success ? 0 : 1);
   } catch (error) {
-    console.error('❌ Build failed:', error);
+    console.error("❌ Build failed:", error);
     process.exit(1);
   }
 }
 
 main().catch((error) => {
-  console.error('Fatal error:', error);
+  console.error("Fatal error:", error);
   process.exit(1);
 });

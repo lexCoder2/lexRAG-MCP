@@ -1429,7 +1429,9 @@ export class ToolHandlers {
       const postActions: Record<string, unknown> = {};
       if (String(status || "").toLowerCase() === "completed") {
         const sessionId = this.getCurrentSessionId() || "session-unknown";
-        const runtimeAgentId = String(assignee || args?.agentId || env.LEXRAG_AGENT_ID);
+        const runtimeAgentId = String(
+          assignee || args?.agentId || env.LEXRAG_AGENT_ID,
+        );
         const { projectId } = this.getActiveProjectContext();
 
         try {

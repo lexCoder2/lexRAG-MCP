@@ -34,11 +34,8 @@ export const CODE_GRAPH_WORKSPACE_ROOT = LEXRAG_WORKSPACE_ROOT;
  */
 export const GRAPH_SOURCE_DIR: string = (() => {
   const raw =
-    process.env.GRAPH_SOURCE_DIR ||
-    path.join(LEXRAG_WORKSPACE_ROOT, "src");
-  return path.isAbsolute(raw)
-    ? raw
-    : path.resolve(LEXRAG_WORKSPACE_ROOT, raw);
+    process.env.GRAPH_SOURCE_DIR || path.join(LEXRAG_WORKSPACE_ROOT, "src");
+  return path.isAbsolute(raw) ? raw : path.resolve(LEXRAG_WORKSPACE_ROOT, raw);
 })();
 
 /**
@@ -47,8 +44,7 @@ export const GRAPH_SOURCE_DIR: string = (() => {
  * Default: basename of LEXRAG_WORKSPACE_ROOT
  */
 export const LEXRAG_PROJECT_ID: string =
-  process.env.LEXRAG_PROJECT_ID ||
-  path.basename(LEXRAG_WORKSPACE_ROOT);
+  process.env.LEXRAG_PROJECT_ID || path.basename(LEXRAG_WORKSPACE_ROOT);
 
 // Alias for backward compatibility
 export const CODE_GRAPH_PROJECT_ID = LEXRAG_PROJECT_ID;
@@ -58,7 +54,8 @@ export const CODE_GRAPH_PROJECT_ID = LEXRAG_PROJECT_ID;
  * Env: LEXRAG_TX_ID
  * Default: undefined (callers generate a fresh `tx-<timestamp>` per invocation)
  */
-export const LEXRAG_TX_ID: string | undefined = process.env.LEXRAG_TX_ID || undefined;
+export const LEXRAG_TX_ID: string | undefined =
+  process.env.LEXRAG_TX_ID || undefined;
 
 // ── MCP Transport ─────────────────────────────────────────────────────────────
 
@@ -206,4 +203,5 @@ export const LEXRAG_ALLOW_RUNTIME_PATH_FALLBACK: boolean =
   process.env.LEXRAG_ALLOW_RUNTIME_PATH_FALLBACK === "true";
 
 // Alias for backward compatibility
-export const CODE_GRAPH_ALLOW_RUNTIME_PATH_FALLBACK = LEXRAG_ALLOW_RUNTIME_PATH_FALLBACK;
+export const CODE_GRAPH_ALLOW_RUNTIME_PATH_FALLBACK =
+  LEXRAG_ALLOW_RUNTIME_PATH_FALLBACK;

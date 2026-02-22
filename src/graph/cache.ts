@@ -93,7 +93,7 @@ export class CacheManager {
    * Get all changed files since last build
    */
   getChangedFiles(
-    files: Array<{ path: string; hash: string; LOC: number }>
+    files: Array<{ path: string; hash: string; LOC: number }>,
   ): string[] {
     const changed: string[] = [];
     // @ts-expect-error - now will be used for timestamp comparison

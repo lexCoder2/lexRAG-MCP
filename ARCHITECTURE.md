@@ -75,15 +75,15 @@ Parsing is handled in `src/graph/orchestrator.ts` which dispatches to the approp
 ### Parser registry
 
 | Language   | Extensions            | Parser (default)             | Parser (tree-sitter, `LEXRAG_USE_TREE_SITTER=true`) |
-| ---------- | --------------------- | ---------------------------- | ------------------------------------------------------- |
-| TypeScript | `.ts`                 | regex (typescript-parser.ts) | `TreeSitterTypeScriptParser`                            |
-| TSX        | `.tsx`                | regex fallback               | `TreeSitterTSXParser`                                   |
-| JavaScript | `.js`, `.mjs`, `.cjs` | FILE node only               | `TreeSitterJavaScriptParser`                            |
-| JSX        | `.jsx`                | FILE node only               | `TreeSitterJSXParser`                                   |
-| Python     | `.py`                 | regex                        | `TreeSitterPythonParser`                                |
-| Go         | `.go`                 | regex                        | `TreeSitterGoParser`                                    |
-| Rust       | `.rs`                 | regex                        | `TreeSitterRustParser`                                  |
-| Java       | `.java`               | regex                        | `TreeSitterJavaParser`                                  |
+| ---------- | --------------------- | ---------------------------- | --------------------------------------------------- |
+| TypeScript | `.ts`                 | regex (typescript-parser.ts) | `TreeSitterTypeScriptParser`                        |
+| TSX        | `.tsx`                | regex fallback               | `TreeSitterTSXParser`                               |
+| JavaScript | `.js`, `.mjs`, `.cjs` | FILE node only               | `TreeSitterJavaScriptParser`                        |
+| JSX        | `.jsx`                | FILE node only               | `TreeSitterJSXParser`                               |
+| Python     | `.py`                 | regex                        | `TreeSitterPythonParser`                            |
+| Go         | `.go`                 | regex                        | `TreeSitterGoParser`                                |
+| Rust       | `.rs`                 | regex                        | `TreeSitterRustParser`                              |
+| Java       | `.java`               | regex                        | `TreeSitterJavaParser`                              |
 
 Tree-sitter grammars are `optionalDependencies`. Missing grammars fall back silently per language.
 

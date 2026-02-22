@@ -106,7 +106,7 @@ async function testOrchestrator(): Promise<void> {
     // Export snapshot
     const snapshotPath = path.join(
       process.cwd(),
-      ".lexrag/cache/graph.snapshot.json"
+      ".lexrag/cache/graph.snapshot.json",
     );
     orchestrator.exportSnapshot(snapshotPath);
     console.log(`[Test] ✓ Snapshot saved to ${snapshotPath}`);
@@ -134,7 +134,7 @@ async function runAllTests(): Promise<void> {
     console.log("2. Check .lexrag/cache/file-hashes.json for cached files");
     console.log('3. Run: npm run graph:query "MATCH (n) RETURN count(n)"');
     console.log(
-      "4. Start Memgraph: docker-compose -f tools/docker/docker-compose.yml up -d"
+      "4. Start Memgraph: docker-compose -f tools/docker/docker-compose.yml up -d",
     );
     console.log("5. Load graph: npm run graph:load");
   } catch (error) {

@@ -183,23 +183,13 @@ export class GraphOrchestrator {
     const opts: BuildOptions = {
       mode: options.mode || "incremental",
       verbose: options.verbose ?? this.verbose,
-      workspaceRoot:
-        options.workspaceRoot ||
-        env.LEXRAG_WORKSPACE_ROOT,
+      workspaceRoot: options.workspaceRoot || env.LEXRAG_WORKSPACE_ROOT,
       projectId:
         options.projectId ||
         env.LEXRAG_PROJECT_ID ||
-        path.basename(
-          options.workspaceRoot ||
-            env.LEXRAG_WORKSPACE_ROOT,
-        ),
+        path.basename(options.workspaceRoot || env.LEXRAG_WORKSPACE_ROOT),
       sourceDir: options.sourceDir || "src",
-      exclude: options.exclude || [
-        "node_modules",
-        "dist",
-        ".next",
-        ".lexrag",
-      ],
+      exclude: options.exclude || ["node_modules", "dist", ".next", ".lexrag"],
       txId: options.txId,
       txTimestamp: options.txTimestamp,
     };

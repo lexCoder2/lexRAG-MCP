@@ -54,7 +54,7 @@ export class ArchitectureEngine {
   constructor(
     layers: LayerDefinition[],
     rules: ArchitectureRule[],
-    _index: GraphIndexManager
+    _index: GraphIndexManager,
   ) {
     this.layers = new Map(layers.map((l) => [l.id, l]));
     this.rules = rules;
@@ -97,7 +97,7 @@ export class ArchitectureEngine {
 
       // Extract imports from file
       const imports = this.extractImportsFromFile(
-        path.join(projectRoot, filePath)
+        path.join(projectRoot, filePath),
       );
 
       for (const imp of imports) {
@@ -225,7 +225,7 @@ export class ArchitectureEngine {
   private resolveImportPath(
     fromPath: string,
     importPath: string,
-    projectRoot: string
+    projectRoot: string,
   ): string | null {
     let resolvedPath: string;
 
@@ -274,7 +274,7 @@ export class ArchitectureEngine {
    */
   private isImportAllowed(
     fromLayer: LayerDefinition,
-    toLayer: LayerDefinition
+    toLayer: LayerDefinition,
   ): boolean {
     // Can always import from same layer
     if (fromLayer.id === toLayer.id) {
@@ -294,7 +294,7 @@ export class ArchitectureEngine {
    */
   private isForbiddenImport(
     fromLayer: LayerDefinition,
-    toLayer: LayerDefinition
+    toLayer: LayerDefinition,
   ): boolean {
     if (!fromLayer.cannotImport) {
       return false;
@@ -395,7 +395,7 @@ export class ArchitectureEngine {
   getSuggestion(
     codeName: string,
     codeType: "component" | "hook" | "service" | "context" | "utility",
-    dependencies: string[]
+    dependencies: string[],
   ): {
     suggestedLayer: LayerDefinition;
     suggestedPath: string;
@@ -432,7 +432,7 @@ export class ArchitectureEngine {
   private getSuggestedPath(
     layer: LayerDefinition,
     codeName: string,
-    codeType: string
+    codeType: string,
   ): string {
     // Use first path pattern and apply naming convention
     const basePattern = layer.paths[0];
@@ -458,7 +458,7 @@ export class ArchitectureEngine {
    */
   async writeViolationsToMemgraph(
     client: MemgraphClient,
-    violations: ValidationViolation[]
+    violations: ValidationViolation[],
   ): Promise<void> {
     console.log(`\n📝 Writing ${violations.length} violations to Memgraph...`);
 
@@ -524,7 +524,7 @@ export class ArchitectureEngine {
       errors.slice(0, 3).forEach((e) => console.error(`   - ${e.error}`));
     } else {
       console.log(
-        `✅ Successfully wrote ${violations.length} violations to graph`
+        `✅ Successfully wrote ${violations.length} violations to graph`,
       );
     }
   }
