@@ -1984,38 +1984,29 @@ export class ToolHandlers {
     try {
       const { workspaceRoot, sourceDir, projectId } = this.getActiveProjectContext();
 
-      // Query Memgraph for authoritative node and relationship counts
-      const nodeCountResult = await this.context.memgraph.executeCypher(
-        "MATCH (n {projectId: $projectId}) RETURN count(n) AS totalNodes",
+      // Phase 4.4: Optimize graph_health queries - combine N+1 queries into single batch
+      // Single query returns all counts at once instead of 5 separate round-trips
+      const healthStatsResult = await this.context.memgraph.executeCypher(
+        `MATCH (n {projectId: $projectId})
+         WITH count(n) AS totalNodes
+         MATCH (n1 {projectId: $projectId})-[r]->(n2 {projectId: $projectId})
+         WITH totalNodes, count(r) AS totalRels
+         MATCH (f:FILE {projectId: $projectId})
+         WITH totalNodes, totalRels, count(f) AS fileCount
+         MATCH (fc:FUNCTION {projectId: $projectId})
+         WITH totalNodes, totalRels, fileCount, count(fc) AS funcCount
+         MATCH (c:CLASS {projectId: $projectId})
+         RETURN totalNodes, totalRels, fileCount, funcCount, count(c) AS classCount`,
         { projectId },
       );
 
-      const relCountResult = await this.context.memgraph.executeCypher(
-        "MATCH (n1 {projectId: $projectId})-[r]->(n2 {projectId: $projectId}) RETURN count(r) AS totalRels",
-        { projectId },
-      );
-
-      const fileCountResult = await this.context.memgraph.executeCypher(
-        "MATCH (f:FILE {projectId: $projectId}) RETURN count(f) AS fileCount",
-        { projectId },
-      );
-
-      const funcCountResult = await this.context.memgraph.executeCypher(
-        "MATCH (f:FUNCTION {projectId: $projectId}) RETURN count(f) AS funcCount",
-        { projectId },
-      );
-
-      const classCountResult = await this.context.memgraph.executeCypher(
-        "MATCH (c:CLASS {projectId: $projectId}) RETURN count(c) AS classCount",
-        { projectId },
-      );
-
-      // Extract values from Memgraph queries
-      const memgraphNodeCount = nodeCountResult.data?.[0]?.totalNodes || 0;
-      const memgraphRelCount = relCountResult.data?.[0]?.totalRels || 0;
-      const memgraphFileCount = fileCountResult.data?.[0]?.fileCount || 0;
-      const memgraphFuncCount = funcCountResult.data?.[0]?.funcCount || 0;
-      const memgraphClassCount = classCountResult.data?.[0]?.classCount || 0;
+      // Extract values from optimized query
+      const stats = healthStatsResult.data?.[0] || {};
+      const memgraphNodeCount = stats.totalNodes || 0;
+      const memgraphRelCount = stats.totalRels || 0;
+      const memgraphFileCount = stats.fileCount || 0;
+      const memgraphFuncCount = stats.funcCount || 0;
+      const memgraphClassCount = stats.classCount || 0;
 
       // Get index statistics for comparison
       const indexStats = this.context.index.getStatistics();
@@ -2040,17 +2031,17 @@ export class ToolHandlers {
       const indexDrift = indexStats.totalNodes !== memgraphNodeCount;
       const embeddingDrift = embeddingCount < indexedSymbols;
 
-      // Get rebuild metadata
-      const latestTxResult = await this.context.memgraph.executeCypher(
-        "MATCH (tx:GRAPH_TX {projectId: $projectId}) RETURN tx.id AS id, tx.timestamp AS timestamp ORDER BY tx.timestamp DESC LIMIT 1",
+      // Phase 4.4: Optimize transaction queries - combine into single query
+      const txMetadataResult = await this.context.memgraph.executeCypher(
+        `MATCH (tx:GRAPH_TX {projectId: $projectId})
+         WITH tx ORDER BY tx.timestamp DESC
+         WITH collect({id: tx.id, timestamp: tx.timestamp})[0] AS latestTx, count(*) AS txCount
+         RETURN latestTx, txCount`,
         { projectId },
       );
-      const txCountResult = await this.context.memgraph.executeCypher(
-        "MATCH (tx:GRAPH_TX {projectId: $projectId}) RETURN count(tx) AS txCount",
-        { projectId },
-      );
-      const latestTxRow = latestTxResult.data?.[0] || {};
-      const txCountRow = txCountResult.data?.[0] || {};
+      const txMetadata = txMetadataResult.data?.[0] || {};
+      const latestTxRow = txMetadata.latestTx || {};
+      const txCountRow = { txCount: txMetadata.txCount || 0 };
       const watcher = this.getActiveWatcher();
 
       // Build recommendations
