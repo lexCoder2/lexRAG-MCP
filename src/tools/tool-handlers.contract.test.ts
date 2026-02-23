@@ -291,4 +291,63 @@ describe("ToolHandlers contract normalization", () => {
       fs.rmSync(rootB, { recursive: true, force: true });
     }
   });
+
+  it("handles BigInt metrics in graph_health without type errors", async () => {
+    const index = new GraphIndexManager();
+    const executeCypher = vi.fn().mockImplementation((query: string) => {
+      if (query.includes("RETURN totalNodes")) {
+        return Promise.resolve({
+          data: [
+            {
+              totalNodes: 12n,
+              totalRels: 21n,
+              fileCount: 3n,
+              funcCount: 7n,
+              classCount: 2n,
+            },
+          ],
+          error: undefined,
+        });
+      }
+
+      if (query.includes("RETURN latestTx, txCount")) {
+        return Promise.resolve({
+          data: [
+            {
+              latestTx: { id: "tx-bigint", timestamp: 1735689600000n },
+              txCount: 9n,
+            },
+          ],
+          error: undefined,
+        });
+      }
+
+      return Promise.resolve({ data: [], error: undefined });
+    });
+
+    const handlers = new ToolHandlers({
+      index,
+      memgraph: {
+        executeCypher,
+        queryNaturalLanguage: vi.fn(),
+        isConnected: vi.fn().mockReturnValue(true),
+        loadProjectGraph: vi.fn().mockResolvedValue({ nodes: [], relationships: [] }),
+      } as any,
+      config: {},
+    });
+
+    const response = await handlers.graph_health({ profile: "debug" });
+    const parsed = JSON.parse(response);
+
+    if (!parsed.ok) {
+      throw new Error(`Expected graph_health to succeed, got: ${response}`);
+    }
+
+    expect(parsed.ok).toBe(true);
+    expect(parsed.data.graphIndex.totalNodes).toBe(12);
+    expect(parsed.data.graphIndex.totalRelationships).toBe(21);
+    expect(parsed.data.rebuild.txCount).toBe(9);
+    expect(parsed.data.rebuild.latestTxTimestamp).toBe(1735689600000);
+    expect(executeCypher).toHaveBeenCalledTimes(2);
+  });
 });

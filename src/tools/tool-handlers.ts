@@ -851,11 +851,11 @@ export class ToolHandlers extends ToolHandlerBase {
 
       // Extract values from optimized query
       const stats = healthStatsResult.data?.[0] || {};
-      const memgraphNodeCount = stats.totalNodes || 0;
-      const memgraphRelCount = stats.totalRels || 0;
-      const memgraphFileCount = stats.fileCount || 0;
-      const memgraphFuncCount = stats.funcCount || 0;
-      const memgraphClassCount = stats.classCount || 0;
+      const memgraphNodeCount = this.toSafeNumber(stats.totalNodes) ?? 0;
+      const memgraphRelCount = this.toSafeNumber(stats.totalRels) ?? 0;
+      const memgraphFileCount = this.toSafeNumber(stats.fileCount) ?? 0;
+      const memgraphFuncCount = this.toSafeNumber(stats.funcCount) ?? 0;
+      const memgraphClassCount = this.toSafeNumber(stats.classCount) ?? 0;
 
       // Get index statistics for comparison
       const indexStats = this.context.index.getStatistics();
@@ -890,7 +890,9 @@ export class ToolHandlers extends ToolHandlerBase {
       );
       const txMetadata = txMetadataResult.data?.[0] || {};
       const latestTxRow = txMetadata.latestTx || {};
-      const txCountRow = { txCount: txMetadata.txCount || 0 };
+      const txCountRow = {
+        txCount: this.toSafeNumber(txMetadata.txCount) ?? 0,
+      };
       const watcher = this.getActiveWatcher();
 
       // Build recommendations
@@ -950,7 +952,8 @@ export class ToolHandlers extends ToolHandlerBase {
             lastRequestedAt: this.lastGraphRebuildAt || null,
             lastMode: this.lastGraphRebuildMode || null,
             latestTxId: latestTxRow.id ?? null,
-            latestTxTimestamp: latestTxRow.timestamp ?? null,
+            latestTxTimestamp:
+              this.toSafeNumber(latestTxRow.timestamp) ?? latestTxRow.timestamp ?? null,
             txCount: txCountRow.txCount ?? 0,
             // Phase 4.5: Include recent build errors in diagnostics
             recentErrors: this.getRecentBuildErrors(projectId, 3),

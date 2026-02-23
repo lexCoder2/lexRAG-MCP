@@ -1,0 +1,160 @@
+{
+  "architecture": {
+    "layers": [
+      {
+        "id": "types",
+        "name": "Types",
+        "paths": [
+          "src/types/**"
+        ],
+        "canImport": [],
+        "description": "Core type definitions"
+      },
+      {
+        "id": "utils",
+        "name": "Utilities",
+        "paths": [
+          "src/utils/**"
+        ],
+        "canImport": [
+          "types"
+        ],
+        "description": "Shared utility helpers"
+      },
+      {
+        "id": "config",
+        "name": "Configuration",
+        "paths": [
+          "src/config.ts",
+          "src/env.ts",
+          "src/request-context.ts"
+        ],
+        "canImport": [
+          "types",
+          "utils"
+        ],
+        "description": "Environment and runtime configuration"
+      },
+      {
+        "id": "graph",
+        "name": "Graph",
+        "paths": [
+          "src/graph/**"
+        ],
+        "canImport": [
+          "types",
+          "utils",
+          "config"
+        ],
+        "description": "Graph model, storage and orchestration"
+      },
+      {
+        "id": "parsers",
+        "name": "Parsers",
+        "paths": [
+          "src/parsers/**"
+        ],
+        "canImport": [
+          "types",
+          "utils",
+          "config"
+        ],
+        "description": "Language parsers and extraction"
+      },
+      {
+        "id": "vector",
+        "name": "Vector",
+        "paths": [
+          "src/vector/**"
+        ],
+        "canImport": [
+          "types",
+          "utils",
+          "config"
+        ],
+        "description": "Vector indexing and retrieval"
+      },
+      {
+        "id": "response",
+        "name": "Response",
+        "paths": [
+          "src/response/**"
+        ],
+        "canImport": [
+          "types",
+          "utils"
+        ],
+        "description": "Response shaping and summarization"
+      },
+      {
+        "id": "engines",
+        "name": "Engines",
+        "paths": [
+          "src/engines/**"
+        ],
+        "canImport": [
+          "types",
+          "utils",
+          "config",
+          "graph",
+          "parsers",
+          "vector",
+          "response"
+        ],
+        "description": "Domain engines for architecture, docs, episodes and coordination"
+      },
+      {
+        "id": "tools",
+        "name": "Tools",
+        "paths": [
+          "src/tools/**"
+        ],
+        "canImport": [
+          "types",
+          "utils",
+          "config",
+          "graph",
+          "parsers",
+          "vector",
+          "response",
+          "engines"
+        ],
+        "description": "MCP tool handlers and contracts"
+      },
+      {
+        "id": "transport",
+        "name": "Transport",
+        "paths": [
+          "src/mcp-server.ts",
+          "src/server.ts",
+          "src/index.ts"
+        ],
+        "canImport": [
+          "*"
+        ],
+        "description": "Server bootstrap and transport registration"
+      },
+      {
+        "id": "cli",
+        "name": "CLI",
+        "paths": [
+          "src/cli/**",
+          "src/test-harness.ts",
+          "src/test-parser.ts"
+        ],
+        "canImport": [
+          "*"
+        ],
+        "description": "CLI entry points and local test harness"
+      }
+    ],
+    "rules": [
+      {
+        "id": "no-transport-in-libraries",
+        "severity": "warn",
+        "pattern": "graph|engines|tools imports from transport",
+        "description": "Library layers should not depend on transport/bootstrap files"
+      }
+    ]
+  }
+}
