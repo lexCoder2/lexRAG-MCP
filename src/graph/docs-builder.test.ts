@@ -182,6 +182,23 @@ describe("DocsBuilder — SECTION statement", () => {
       .map((s) => s.params.id);
     expect(new Set(ids).size).toBe(ids.length);
   });
+
+  // T7 — regression: SECTION.relativePath must be populated (audit F5/N4)
+  it("SECTION params include relativePath matching the parent document", () => {
+    const doc = makeDoc({ relativePath: "docs/architecture.md" });
+    const stmts = builder("p", "/r", "tx", 0).buildFromParsedDoc(doc);
+    const secStmt = stmts.find(
+      (s) => s.query.includes("s.relativePath") && s.params.relativePath,
+    )!;
+    expect(secStmt).toBeDefined();
+    expect(secStmt.params.relativePath).toBe("docs/architecture.md");
+  });
+
+  it("SECTION Cypher SET clause contains relativePath assignment", () => {
+    const stmts = builder().buildFromParsedDoc(makeDoc());
+    const secStmt = stmts.find((s) => s.params.heading === "Introduction")!;
+    expect(secStmt.query).toMatch(/s\.relativePath\s*=/);
+  });
 });
 
 // ─── SECTION_OF edge ─────────────────────────────────────────────────────────

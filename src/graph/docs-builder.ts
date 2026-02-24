@@ -57,7 +57,7 @@ export class DocsBuilder {
     for (const section of doc.sections) {
       const secId = this.sectionId(doc.relativePath, section.index);
       sectionIds.push(secId);
-      stmts.push(this.upsertSection(secId, docId, section));
+      stmts.push(this.upsertSection(secId, docId, section, doc.relativePath));
       stmts.push(this.upsertSectionOf(secId, docId));
     }
 
@@ -112,17 +112,19 @@ SET d.relativePath = $relativePath,
     secId: string,
     docId: string,
     section: ParsedSection,
+    relativePath: string,
   ): CypherStatement {
     return {
       query: `
 MERGE (s:SECTION { id: $id, projectId: $projectId })
-SET s.heading   = $heading,
-    s.level     = $level,
-    s.content   = $content,
-    s.wordCount = $wordCount,
-    s.startLine = $startLine,
-    s.docId     = $docId,
-    s.txId      = $txId
+SET s.heading      = $heading,
+    s.level        = $level,
+    s.content      = $content,
+    s.wordCount    = $wordCount,
+    s.startLine    = $startLine,
+    s.docId        = $docId,
+    s.relativePath = $relativePath,
+    s.txId         = $txId
 `,
       params: {
         id: secId,
@@ -134,6 +136,7 @@ SET s.heading   = $heading,
         wordCount: section.wordCount,
         startLine: section.startLine,
         docId,
+        relativePath,
         txId: this.txId,
       },
     };
