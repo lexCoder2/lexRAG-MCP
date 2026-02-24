@@ -539,19 +539,23 @@ export class GraphBuilder {
       path.dirname(parsedFile.filePath),
     );
     if (resolvedPath) {
+      // resolvedPath is relative to workspaceRoot; compute absolute path so
+      // that FILE.path is always absolute, consistent with createFileNode.
+      const absoluteTargetPath = path.resolve(this.workspaceRoot, resolvedPath);
       this.statements.push({
         query: `
           MATCH (imp:IMPORT {id: $impId})
           MERGE (targetFile:FILE {id: $targetId})
-          SET targetFile.path = $targetPath,
-              targetFile.relativePath = $targetPath,
+          SET targetFile.path = $absoluteTargetPath,
+              targetFile.relativePath = $relativePath,
               targetFile.projectId = $projectId
           MERGE (imp)-[:REFERENCES]->(targetFile)
         `,
         params: {
           impId: nodeId,
           targetId: this.fileNodeIdFromRelative(resolvedPath),
-          targetPath: resolvedPath,
+          absoluteTargetPath,
+          relativePath: resolvedPath,
           projectId: this.projectId,
         },
       });
