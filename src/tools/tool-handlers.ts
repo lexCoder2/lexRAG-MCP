@@ -348,11 +348,130 @@ export class ToolHandlers extends ToolHandlerBase {
           }
         }
       } else if (type === "circular") {
-        // Find circular dependencies (simplified)
-        results.matches.push({
-          note: "Circular dependency detection requires full graph traversal",
-          status: "not-implemented",
+        const { projectId } = this.getActiveProjectContext();
+        const allFiles = this.context.index.getNodesByType("FILE");
+        let files = allFiles.filter((node) => {
+          const nodeProjectId = String(node.properties.projectId || "");
+          if (!projectId) return true;
+          if (!nodeProjectId) {
+            if (node.id.startsWith(`${projectId}:`)) {
+              return true;
+            }
+            return true;
+          }
+          return nodeProjectId === projectId;
         });
+
+        if (!files.length) {
+          files = allFiles;
+        }
+
+        const fileIds = new Set(files.map((f) => f.id));
+        const adjacency = new Map<string, Set<string>>();
+
+        for (const file of files) {
+          const targets = new Set<string>();
+          const importRels = this.context.index
+            .getRelationshipsFrom(file.id)
+            .filter((rel) => rel.type === "IMPORTS");
+
+          for (const importRel of importRels) {
+            const directTarget = this.context.index.getNode(importRel.to);
+            if (
+              directTarget?.type === "FILE" &&
+              fileIds.has(directTarget.id) &&
+              directTarget.id !== file.id
+            ) {
+              targets.add(directTarget.id);
+            }
+
+            const refs = this.context.index
+              .getRelationshipsFrom(importRel.to)
+              .filter((rel) => rel.type === "REFERENCES");
+            for (const ref of refs) {
+              const targetFile = this.context.index.getNode(ref.to);
+              if (
+                targetFile?.type === "FILE" &&
+                fileIds.has(targetFile.id) &&
+                targetFile.id !== file.id
+              ) {
+                targets.add(targetFile.id);
+              }
+            }
+          }
+
+          adjacency.set(file.id, targets);
+        }
+
+        const cycles: string[][] = [];
+        const seenCycles = new Set<string>();
+        const tempVisited = new Set<string>();
+        const permVisited = new Set<string>();
+        const stack: string[] = [];
+
+        const canonicalizeCycle = (cycle: string[]): string => {
+          const normalized = cycle.slice(0, -1);
+          if (!normalized.length) return "";
+          let best = normalized;
+          for (let i = 1; i < normalized.length; i++) {
+            const rotated = [...normalized.slice(i), ...normalized.slice(0, i)];
+            if (rotated.join("|") < best.join("|")) {
+              best = rotated;
+            }
+          }
+          return best.join("|");
+        };
+
+        const visit = (nodeId: string): void => {
+          if (permVisited.has(nodeId)) return;
+          tempVisited.add(nodeId);
+          stack.push(nodeId);
+
+          const neighbors = adjacency.get(nodeId) || new Set<string>();
+          for (const nextId of neighbors) {
+            if (!tempVisited.has(nextId) && !permVisited.has(nextId)) {
+              visit(nextId);
+              continue;
+            }
+
+            if (tempVisited.has(nextId)) {
+              const start = stack.indexOf(nextId);
+              if (start >= 0) {
+                const cycle = [...stack.slice(start), nextId];
+                const key = canonicalizeCycle(cycle);
+                if (key && !seenCycles.has(key)) {
+                  seenCycles.add(key);
+                  cycles.push(cycle);
+                }
+              }
+            }
+          }
+
+          stack.pop();
+          tempVisited.delete(nodeId);
+          permVisited.add(nodeId);
+        };
+
+        for (const file of files) {
+          if (!permVisited.has(file.id)) {
+            visit(file.id);
+          }
+        }
+
+        results.matches = cycles.slice(0, 20).map((cycle) => ({
+          cycle: cycle.map((id) => {
+            const node = this.context.index.getNode(id);
+            return String(node?.properties.path || id);
+          }),
+          length: Math.max(1, cycle.length - 1),
+        }));
+
+        if (!results.matches.length) {
+          results.matches.push({
+            status: "none-found",
+            note: "No circular dependencies detected in FILE import graph",
+          });
+        }
       } else {
         // Generic pattern search
         results.matches.push({
@@ -428,10 +547,12 @@ export class ToolHandlers extends ToolHandlerBase {
 
       // Gap fix: Persist task update to Memgraph (Phase 2d compliance)
       if (status || assignee || dueDate) {
-        const persistedSuccessfully = await this.progressEngine!.persistTaskUpdate(
-          taskId,
-          { status, assignee, dueDate },
-        );
+        const persistedSuccessfully =
+          await this.progressEngine!.persistTaskUpdate(taskId, {
+            status,
+            assignee,
+            dueDate,
+          });
         if (!persistedSuccessfully) {
           console.warn(
             `[task_update] Failed to persist task update to Memgraph for ${taskId}`,
@@ -510,16 +631,74 @@ export class ToolHandlers extends ToolHandlerBase {
     const { featureId, profile = "compact" } = args;
 
     try {
-      const status = this.progressEngine!.getFeatureStatus(featureId);
+      const allFeatures = this.progressEngine!.query("feature").items as Array<{
+        id: string;
+        name?: string;
+        status?: string;
+      }>;
 
-      if (!status) {
+      const requested = String(featureId || "").trim();
+      if (
+        !requested ||
+        requested === "*" ||
+        requested.toLowerCase() === "list"
+      ) {
         return this.formatSuccess(
-          { success: false, error: `Feature not found: ${featureId}` },
+          {
+            success: true,
+            totalFeatures: allFeatures.length,
+            features: allFeatures.slice(0, 100).map((feature) => ({
+              id: feature.id,
+              name: feature.name || "",
+              status: feature.status || "unknown",
+            })),
+          },
           profile,
         );
       }
 
-      return this.formatSuccess(status, profile);
+      let resolvedFeatureId = requested;
+      let status = this.progressEngine!.getFeatureStatus(resolvedFeatureId);
+
+      if (!status) {
+        const lowered = requested.toLowerCase();
+        const matched = allFeatures.find((feature) => {
+          const name = String(feature.name || "").toLowerCase();
+          return (
+            feature.id === requested ||
+            feature.id.endsWith(`:${requested}`) ||
+            feature.id.toLowerCase().endsWith(`:${lowered}`) ||
+            name === lowered
+          );
+        });
+
+        if (matched) {
+          resolvedFeatureId = matched.id;
+          status = this.progressEngine!.getFeatureStatus(resolvedFeatureId);
+        }
+      }
+
+      if (!status) {
+        return this.formatSuccess(
+          {
+            success: false,
+            error: `Feature not found: ${featureId}`,
+            availableFeatureIds: allFeatures
+              .map((feature) => feature.id)
+              .slice(0, 50),
+            hint: "Use feature_status with featureId='list' to inspect available IDs",
+          },
+          profile,
+        );
+      }
+
+      return this.formatSuccess(
+        {
+          ...status,
+          resolvedFeatureId,
+        },
+        profile,
+      );
     } catch (error) {
       return this.errorEnvelope("FEATURE_STATUS_FAILED", String(error), true);
     }
@@ -745,8 +924,12 @@ export class ToolHandlers extends ToolHandlerBase {
             // Phase 2b: Auto-generate embeddings during full rebuild
             // Make embeddings available immediately after full rebuild completes
             try {
-              const generated = await this.embeddingEngine?.generateAllEmbeddings();
-              if (generated && generated.functions + generated.classes + generated.files > 0) {
+              const generated =
+                await this.embeddingEngine?.generateAllEmbeddings();
+              if (
+                generated &&
+                generated.functions + generated.classes + generated.files > 0
+              ) {
                 await this.embeddingEngine?.storeInQdrant();
                 // Phase 4.3: Mark embeddings ready per-project
                 this.setProjectEmbeddingsReady(projectId, true);
@@ -831,7 +1014,8 @@ export class ToolHandlers extends ToolHandlerBase {
     const profile = args?.profile || "compact";
 
     try {
-      const { workspaceRoot, sourceDir, projectId } = this.getActiveProjectContext();
+      const { workspaceRoot, sourceDir, projectId } =
+        this.getActiveProjectContext();
 
       // Phase 4.4: Optimize graph_health queries - combine N+1 queries into single batch
       // Single query returns all counts at once instead of 5 separate round-trips
@@ -860,12 +1044,16 @@ export class ToolHandlers extends ToolHandlerBase {
       // Get index statistics for comparison
       const indexStats = this.context.index.getStatistics();
       const indexFileCount = this.context.index.getNodesByType("FILE").length;
-      const indexFuncCount = this.context.index.getNodesByType("FUNCTION").length;
+      const indexFuncCount =
+        this.context.index.getNodesByType("FUNCTION").length;
       const indexClassCount = this.context.index.getNodesByType("CLASS").length;
       const indexedSymbols = indexFileCount + indexFuncCount + indexClassCount;
 
       // Get embedding statistics (filtered by projectId)
-      const embeddingCount = this.embeddingEngine?.getAllEmbeddings().filter(e => e.projectId === projectId).length || 0;
+      const embeddingCount =
+        this.embeddingEngine
+          ?.getAllEmbeddings()
+          .filter((e) => e.projectId === projectId).length || 0;
       const embeddingCoverage =
         memgraphFuncCount + memgraphClassCount + memgraphFileCount > 0
           ? Number(
@@ -898,11 +1086,15 @@ export class ToolHandlers extends ToolHandlerBase {
       // Build recommendations
       const recommendations: string[] = [];
       if (indexDrift) {
-        recommendations.push("Index is out of sync with Memgraph - run graph_rebuild to synchronize");
+        recommendations.push(
+          "Index is out of sync with Memgraph - run graph_rebuild to synchronize",
+        );
       }
       // Phase 4.3: Check per-project embedding readiness
       if (embeddingDrift && this.isProjectEmbeddingsReady(projectId)) {
-        recommendations.push("Some entities don't have embeddings - run semantic_search or graph_rebuild to generate them");
+        recommendations.push(
+          "Some entities don't have embeddings - run semantic_search or graph_rebuild to generate them",
+        );
       }
 
       return this.formatSuccess(
@@ -953,7 +1145,9 @@ export class ToolHandlers extends ToolHandlerBase {
             lastMode: this.lastGraphRebuildMode || null,
             latestTxId: latestTxRow.id ?? null,
             latestTxTimestamp:
-              this.toSafeNumber(latestTxRow.timestamp) ?? latestTxRow.timestamp ?? null,
+              this.toSafeNumber(latestTxRow.timestamp) ??
+              latestTxRow.timestamp ??
+              null,
             txCount: txCountRow.txCount ?? 0,
             // Phase 4.5: Include recent build errors in diagnostics
             recentErrors: this.getRecentBuildErrors(projectId, 3),
@@ -967,7 +1161,9 @@ export class ToolHandlers extends ToolHandlerBase {
           recommendations,
         },
         profile,
-        indexDrift ? "Graph drift detected - see recommendations" : "Graph health is OK.",
+        indexDrift
+          ? "Graph drift detected - see recommendations"
+          : "Graph health is OK.",
         "graph_health",
       );
     } catch (error) {
@@ -1321,7 +1517,13 @@ export class ToolHandlers extends ToolHandlerBase {
 
     try {
       const resolved = this.resolveElement(elementId);
-      const candidatePath = resolved?.properties.path;
+      const candidatePath =
+        resolved?.properties.path ||
+        resolved?.properties.filePath ||
+        resolved?.properties.relativePath ||
+        (typeof elementId === "string" && elementId.includes("/")
+          ? elementId
+          : undefined);
 
       if (!candidatePath) {
         return this.errorEnvelope(
@@ -1649,16 +1851,23 @@ export class ToolHandlers extends ToolHandlerBase {
   async agent_status(args: any): Promise<string> {
     const { agentId, profile = "compact" } = args || {};
 
-    if (!agentId || typeof agentId !== "string") {
-      return this.errorEnvelope(
-        "AGENT_STATUS_INVALID_INPUT",
-        "Field 'agentId' is required.",
-        true,
-      );
-    }
-
     try {
       const { projectId } = this.getActiveProjectContext();
+
+      // When agentId is omitted, return the fleet-wide overview (list-all case)
+      if (!agentId || typeof agentId !== "string") {
+        const overview = await this.coordinationEngine!.overview(projectId);
+        return this.formatSuccess(
+          {
+            projectId,
+            mode: "overview",
+            ...overview,
+          },
+          profile,
+          `Fleet: ${overview.activeClaims.length} active claim(s), ${overview.staleClaims.length} stale.`,
+        );
+      }
+
       const status = await this.coordinationEngine!.status(agentId, projectId);
 
       return this.formatSuccess(

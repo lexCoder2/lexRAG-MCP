@@ -602,6 +602,11 @@ function createMcpServerInstance(): McpServer {
           .enum(["all", "active", "blocked", "completed"])
           .optional()
           .describe("Filter by status"),
+        profile: z
+          .enum(["compact", "balanced", "debug"])
+          .optional()
+          .default("compact")
+          .describe("Response profile"),
       }),
     },
     async (args: any) => {
@@ -1138,7 +1143,7 @@ function createMcpServerInstance(): McpServer {
     {
       description: "Get active claims and recent episodes for an agent",
       inputSchema: z.object({
-        agentId: z.string().describe("Agent identifier"),
+        agentId: z.string().optional().describe("Agent identifier (omit to list all agents)"),
         profile: z
           .enum(["compact", "balanced", "debug"])
           .default("compact")
