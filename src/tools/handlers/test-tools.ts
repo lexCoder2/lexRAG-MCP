@@ -19,6 +19,12 @@ import { execWithTimeout } from "../../utils/exec-utils.js";
 interface TestToolContext {
   testEngine?: any; // TestEngine
   execWithTimeout?: typeof execWithTimeout;
+  /** MemgraphClient — used by impact_analyze for graph traversal */
+  context?: {
+    memgraph?: any;
+    index?: any;
+  };
+  getActiveProjectContext?(): { projectId: string; workspaceRoot: string };
   errorEnvelope(
     code: string,
     reason: string,
@@ -31,6 +37,104 @@ interface TestToolContext {
     summary?: string,
     toolName?: string
   ): string;
+}
+
+/**
+ * Resolve which source files directly import the given changed files by
+ * traversing IMPORTS → REFERENCES edges in Memgraph.
+ *
+ * Falls back to the in-memory index if Memgraph is not connected.
+ * Returns at most 50 paths, sorted alphabetically.
+ */
+async function resolveDirectImpact(
+  ctx: TestToolContext,
+  changedFiles: string[],
+): Promise<string[]> {
+  const memgraph = ctx.context?.memgraph;
+
+  // Try Memgraph graph traversal first (most accurate, uses persisted graph)
+  if (memgraph?.isConnected?.()) {
+    try {
+      const projectId = ctx.getActiveProjectContext?.()?.projectId ?? "";
+
+      // Normalize input: accept both relative and absolute paths as search keys
+      const result = await memgraph.executeCypher(
+        `MATCH (changed:FILE)
+         WHERE changed.projectId = $projectId
+           AND (changed.relativePath IN $changedPaths
+                OR changed.path IN $changedPaths
+                OR any(cp IN $changedPaths WHERE changed.relativePath = cp
+                                              OR changed.path = cp
+                                              OR changed.relativePath ENDS WITH cp
+                                              OR changed.path ENDS WITH cp))
+         WITH collect(DISTINCT changed) AS changedFiles
+         UNWIND changedFiles AS changed
+         MATCH (changed)<-[:REFERENCES]-(imp:IMPORT)<-[:IMPORTS]-(importer:FILE)
+         WHERE importer.projectId = $projectId
+           AND importer.id <> changed.id
+         RETURN DISTINCT
+           coalesce(importer.relativePath, importer.path) AS path
+         ORDER BY path
+         LIMIT 50`,
+        { projectId, changedPaths: changedFiles },
+      );
+
+      const paths: string[] = result.data
+        .map((row: any) => String(row.path ?? ""))
+        .filter(Boolean);
+
+      if (paths.length > 0) {
+        return paths;
+      }
+    } catch {
+      // Fall through to index-based fallback
+    }
+  }
+
+  // Fallback: traverse in-memory index (less accurate, no projectId scoping)
+  const index = ctx.context?.index;
+  if (!index?.getRelationshipsTo) {
+    return [];
+  }
+
+  const importers = new Set<string>();
+  try {
+    const fileNodes: any[] = index.getNodesByType("FILE") ?? [];
+
+    for (const changed of changedFiles) {
+      // Find FILE node whose relativePath or path matches the changed file
+      const targetNode = fileNodes.find(
+        (n: any) =>
+          n.data?.relativePath === changed ||
+          n.data?.path === changed ||
+          n.data?.relativePath?.endsWith(changed) ||
+          n.data?.path?.endsWith(changed),
+      );
+      if (!targetNode) continue;
+
+      // incoming REFERENCES edges → IMPORT nodes
+      const refsToTarget: any[] = index.getRelationshipsTo(targetNode.id) ?? [];
+      for (const ref of refsToTarget) {
+        if (ref.type !== "REFERENCES") continue;
+        // incoming IMPORTS edges → source FILE nodes
+        const importsToImp: any[] = index.getRelationshipsTo(ref.from) ?? [];
+        for (const imp of importsToImp) {
+          if (imp.type !== "IMPORTS") continue;
+          const sourceNode = index.getNode(imp.from);
+          if (!sourceNode) continue;
+          const p =
+            sourceNode.data?.relativePath ||
+            sourceNode.data?.path ||
+            sourceNode.id;
+          if (p && p !== changed) importers.add(p);
+        }
+      }
+    }
+  } catch {
+    // best-effort
+  }
+
+  return Array.from(importers).sort().slice(0, 50);
 }
 
 /**
@@ -105,7 +209,11 @@ export function createTestTools(ctx: TestToolContext) {
     },
 
     /**
-     * Analyze blast radius of changes
+     * Analyze blast radius of changes.
+     *
+     * directImpact is derived from graph traversal (IMPORTS/REFERENCES edges)
+     * to find source files that directly depend on the changed files, rather
+     * than from test selection alone.
      */
     async impact_analyze(args: any): Promise<string> {
       const profile = args?.profile || "compact";
@@ -147,11 +255,15 @@ export function createTestTools(ctx: TestToolContext) {
           depth
         );
 
+        // Compute directImpact via graph traversal to find source files that
+        // directly import the changed files, independent of test selection.
+        const directImpact = await resolveDirectImpact(ctx, changedFiles);
+
         return ctx.formatSuccess(
           {
             changedFiles,
             analysis: {
-              directImpact: result.selectedTests.slice(0, 10),
+              directImpact,
               estimatedTestTime: result.estimatedTime,
               coverage: result.coverage,
               blastRadius: {

@@ -877,6 +877,47 @@ describe("ToolHandlers architecture and test contracts", () => {
     expect(parsed.data.changedFiles).toEqual([]);
     expect(parsed.data.warning).toContain("No changed files");
   });
+
+  // T22 — impact_analyze must return non-empty directImpact when graph has
+  // IMPORTS edges pointing to the changed file (F6 / A1 regression).
+  it("T22: impact_analyze directImpact uses graph traversal via IMPORTS edges", async () => {
+    const handlers = new ToolHandlers({
+      index: new GraphIndexManager(),
+      memgraph: {
+        isConnected: vi.fn().mockReturnValue(true),
+        executeCypher: vi.fn().mockResolvedValue({
+          data: [
+            { path: "src/store/graphStore.ts" },
+            { path: "src/hooks/useGraphController.ts" },
+          ],
+        }),
+        queryNaturalLanguage: vi.fn(),
+      } as any,
+      config: {},
+    });
+
+    const selectAffectedTests = vi.fn().mockReturnValue({
+      selectedTests: [],
+      estimatedTime: 0,
+      coverage: { percentage: 0, testsSelected: 0, totalTests: 0 },
+    });
+    (handlers as any).testEngine = { selectAffectedTests };
+
+    const response = await handlers.callTool("impact_analyze", {
+      files: ["src/graph/client.ts"],
+      profile: "debug",
+    });
+    const parsed = JSON.parse(response);
+
+    expect(parsed.ok).toBe(true);
+    // directImpact must reflect graph traversal results, not just test files
+    expect(parsed.data.analysis.directImpact).toContain(
+      "src/store/graphStore.ts",
+    );
+    expect(parsed.data.analysis.directImpact).toContain(
+      "src/hooks/useGraphController.ts",
+    );
+  });
 });
 
 describe("ToolHandlers coordination and memory contracts", () => {
