@@ -188,9 +188,10 @@ export class ArchitectureEngine {
 
     const patternRegex = pattern
       .replace(/\//g, "/")
-      .replace(/\*\*/g, ".*")
+      .replace(/\*\*/g, "__DOUBLE_STAR__")
       .replace(/\*/g, "[^/]*")
-      .replace(/\?/g, ".");
+      .replace(/\?/g, ".")
+      .replace(/__DOUBLE_STAR__/g, ".*");
 
     const regex = new RegExp(`^${patternRegex}$`);
     return regex.test(filePath);
@@ -337,14 +338,14 @@ export class ArchitectureEngine {
 
     // DFS to detect cycles
     const dfs = (node: string, currentPath: string[]): void => {
-      if (visited.has(node)) return;
-
       // Check for cycle BEFORE adding to path
       const cycleStart = currentPath.indexOf(node);
       if (cycleStart >= 0) {
         cycles.push([...currentPath.slice(cycleStart), node]);
         return;
       }
+
+      if (visited.has(node)) return;
 
       visited.add(node);
       recursionStack.add(node);
@@ -390,43 +391,89 @@ export class ArchitectureEngine {
   }
 
   /**
-   * Get suggestion for placing new code
+   * Get suggestion for placing new code.
+   *
+   * Layer selection strategy:
+   * 1. Filter to layers that can import from all dependency layer IDs.
+   *    External package names (e.g. "react", "zustand") are not layer IDs and
+   *    are skipped; they do not constrain layer selection.
+   * 2. Among eligible layers, rank by affinity with codeType to pick the
+   *    semantically best match (e.g. "service" → services/lib layer, not types).
    */
   getSuggestion(
     codeName: string,
-    codeType: "component" | "hook" | "service" | "context" | "utility",
+    codeType: string,
     dependencies: string[],
   ): {
     suggestedLayer: LayerDefinition;
     suggestedPath: string;
     reasoning: string;
   } | null {
-    // Find layer that can satisfy all dependencies
+    // Only use deps that are recognized layer IDs; external packages are ignored
+    const layerDeps = dependencies.filter((dep) => this.layers.has(dep));
+
+    // Find all layers that can import from every required layer dependency
+    const eligibleLayers: LayerDefinition[] = [];
     for (const layer of this.layers.values()) {
       let canImportAll = true;
-
-      for (const dep of dependencies) {
-        // Find which layer the dependency is in
-        // For now, assume dependency is a module name we can look up
-        const depLayer = this.layers.get(dep);
-        if (depLayer && !this.isImportAllowed(layer, depLayer)) {
+      for (const dep of layerDeps) {
+        const depLayer = this.layers.get(dep)!;
+        if (!this.isImportAllowed(layer, depLayer)) {
           canImportAll = false;
           break;
         }
       }
-
       if (canImportAll) {
-        // Suggest first matching path pattern
-        const suggestedPath = this.getSuggestedPath(layer, codeName, codeType);
-        return {
-          suggestedLayer: layer,
-          suggestedPath,
-          reasoning: `Layer '${layer.name}' can import from ${layer.canImport.join(", ")}`,
-        };
+        eligibleLayers.push(layer);
       }
     }
 
-    return null;
+    if (eligibleLayers.length === 0) {
+      return null;
+    }
+
+    // Rank eligible layers by codeType affinity (higher-priority terms first)
+    const affinityMap: Record<string, string[]> = {
+      component: ["component", "ui", "view", "page", "widget", "presentation"],
+      hook: ["hook", "custom"],
+      service: ["service", "api", "engine", "lib", "utils"],
+      context: ["context", "store", "state", "provider"],
+      utility: ["util", "lib", "common", "shared", "helper"],
+      engine: ["engine", "service", "lib"],
+      class: ["engine", "service", "lib", "model"],
+      module: ["lib", "util", "common", "shared"],
+    };
+    const affinityTerms: string[] = affinityMap[codeType] ?? [];
+
+    let bestLayer = eligibleLayers[0];
+    let bestScore = -1;
+    for (const layer of eligibleLayers) {
+      const layerIdLower = layer.id.toLowerCase();
+      let score = 0;
+      for (let i = 0; i < affinityTerms.length; i++) {
+        if (layerIdLower.includes(affinityTerms[i])) {
+          // Earlier terms carry higher weight
+          score = affinityTerms.length - i;
+          break;
+        }
+      }
+      if (score > bestScore) {
+        bestScore = score;
+        bestLayer = layer;
+      }
+    }
+
+    const suggestedPath = this.getSuggestedPath(bestLayer, codeName, codeType);
+    const importableFrom =
+      bestLayer.canImport.length > 0
+        ? bestLayer.canImport.join(", ")
+        : "no other layers (foundational layer)";
+
+    return {
+      suggestedLayer: bestLayer,
+      suggestedPath,
+      reasoning: `Layer '${bestLayer.name}' best matches '${codeType}' and can import from: ${importableFrom}`,
+    };
   }
 
   private getSuggestedPath(
@@ -436,7 +483,7 @@ export class ArchitectureEngine {
   ): string {
     // Use first path pattern and apply naming convention
     const basePattern = layer.paths[0];
-    const basePath = basePattern.replace("/**", "");
+    const basePath = basePattern.replace("/**", "").replace(/\/\*$/, "");
 
     let fileName = codeName;
     if (codeType === "component") {
@@ -445,9 +492,15 @@ export class ArchitectureEngine {
       fileName = codeName.startsWith("use") ? codeName : `use${codeName}`;
       fileName = fileName.endsWith(".ts") ? fileName : `${fileName}.ts`;
     } else if (codeType === "service") {
-      fileName = codeName.endsWith("Service.ts")
-        ? codeName
-        : `${codeName}Service.ts`;
+      // Avoid double-suffix: "GraphDataService" + service → "GraphDataService.ts"
+      if (codeName.endsWith("Service.ts") || codeName.endsWith("Service")) {
+        fileName = codeName.endsWith(".ts") ? codeName : `${codeName}.ts`;
+      } else {
+        fileName = `${codeName}Service.ts`;
+      }
+    } else {
+      // Default: ensure .ts extension
+      fileName = codeName.endsWith(".ts") ? codeName : `${codeName}.ts`;
     }
 
     return `${basePath}/${fileName}`;
@@ -534,7 +587,9 @@ export class ArchitectureEngine {
    * Called when project context changes
    */
   reload(_index: GraphIndexManager, projectId?: string): void {
-    console.log(`[ArchitectureEngine] Reloading architecture validation (projectId=${projectId})`);
+    console.log(
+      `[ArchitectureEngine] Reloading architecture validation (projectId=${projectId})`,
+    );
     // ArchitectureEngine doesn't hold project-specific state in index
     // so reload is mainly for consistency with other engines
   }
