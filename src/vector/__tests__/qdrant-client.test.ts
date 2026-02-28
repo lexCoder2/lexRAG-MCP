@@ -58,9 +58,7 @@ describe("QdrantClient", () => {
     const client = new QdrantClient("localhost", 6333);
     await client.connect();
     await client.createCollection("functions", 128);
-    await client.upsertPoints("functions", [
-      { id: "p1", vector: [0.1, 0.2], payload: { n: 1 } },
-    ]);
+    await client.upsertPoints("functions", [{ id: "p1", vector: [0.1, 0.2], payload: { n: 1 } }]);
     const search = await client.search("functions", [0.1, 0.2], 3);
     await client.deleteCollection("functions");
     const collection = await client.getCollection("functions");

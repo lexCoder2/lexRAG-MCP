@@ -54,12 +54,7 @@ describe("EmbeddingEngine", () => {
     const engine = new EmbeddingEngine(buildIndex(), qdrant);
     await engine.generateAllEmbeddings();
 
-    const results = await engine.findSimilar(
-      "sum function",
-      "function",
-      3,
-      "proj-a",
-    );
+    const results = await engine.findSimilar("sum function", "function", 3, "proj-a");
     expect(results.length).toBeGreaterThan(0);
     expect(results[0].id).toContain("sum");
   });

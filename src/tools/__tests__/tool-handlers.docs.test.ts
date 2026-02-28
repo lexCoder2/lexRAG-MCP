@@ -85,9 +85,7 @@ describe("ToolHandlers.index_docs", () => {
     const handlers = makeHandlers();
     const indexWorkspace = vi
       .fn()
-      .mockResolvedValue(
-        okDocsResult({ errors: [{ file: "broken.md", error: "ENOENT" }] }),
-      );
+      .mockResolvedValue(okDocsResult({ errors: [{ file: "broken.md", error: "ENOENT" }] }));
     (handlers as any).docsEngine = { indexWorkspace };
 
     const raw = await handlers.index_docs({});
