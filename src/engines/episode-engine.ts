@@ -104,20 +104,12 @@ export default class EpisodeEngine {
       );
     }
 
-    await this.linkToPreviousEpisode(
-      id,
-      input.agentId,
-      input.sessionId,
-      projectId,
-    );
+    await this.linkToPreviousEpisode(id, input.agentId, input.sessionId, projectId);
     return id;
   }
 
   async recall(query: RecallQuery): Promise<Episode[]> {
-    const conditions = [
-      "e.projectId = $projectId",
-      "(e.sensitive IS NULL OR e.sensitive = false)",
-    ];
+    const conditions = ["e.projectId = $projectId", "(e.sensitive IS NULL OR e.sensitive = false)"];
     const params: Record<string, unknown> = {
       projectId: query.projectId,
       limit: Math.max(1, Math.min(query.limit || 5, 50)),
@@ -165,13 +157,9 @@ export default class EpisodeEngine {
       const temporalScore = Math.exp(-0.05 * ageDays);
 
       const episodeEntities = new Set(episode.entities || []);
-      const graphScore =
-        queryEntities.size > 0
-          ? this.jaccard(queryEntities, episodeEntities)
-          : 0;
+      const graphScore = queryEntities.size > 0 ? this.jaccard(queryEntities, episodeEntities) : 0;
 
-      const relevance =
-        0.5 * lexicalScore + 0.3 * temporalScore + 0.2 * graphScore;
+      const relevance = 0.5 * lexicalScore + 0.3 * temporalScore + 0.2 * graphScore;
 
       return { ...episode, relevance: Number(relevance.toFixed(4)) };
     });
@@ -309,15 +297,11 @@ export default class EpisodeEngine {
     );
   }
 
-  private rowToEpisode(
-    row: Record<string, any>,
-    projectId: string,
-  ): Episode | null {
+  private rowToEpisode(row: Record<string, any>, projectId: string): Episode | null {
+    if (row == null || typeof row !== "object") return null;
     const rawNode = row.e || row.episode || row;
     const node =
-      rawNode && typeof rawNode === "object" && rawNode.properties
-        ? rawNode.properties
-        : rawNode;
+      rawNode && typeof rawNode === "object" && rawNode.properties ? rawNode.properties : rawNode;
     if (!node || typeof node !== "object") {
       return null;
     }

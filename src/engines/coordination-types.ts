@@ -6,11 +6,7 @@
 
 export type ClaimType = "task" | "file" | "function" | "feature";
 
-export type InvalidationReason =
-  | "released"
-  | "code_changed"
-  | "task_completed"
-  | "expired";
+export type InvalidationReason = "released" | "code_changed" | "task_completed" | "expired";
 
 export interface AgentClaim {
   id: string;

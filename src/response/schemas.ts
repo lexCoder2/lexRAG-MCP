@@ -20,12 +20,12 @@ export const TOOL_OUTPUT_SCHEMAS: Record<string, OutputField[]> = {
     },
     {
       key: "count",
-      priority: "high",
+      priority: "required",
       description: "Number of returned rows",
     },
     {
       key: "results",
-      priority: "high",
+      priority: "required",
       description: "Query result rows",
     },
     {
@@ -324,12 +324,27 @@ export const TOOL_OUTPUT_SCHEMAS: Record<string, OutputField[]> = {
       priority: "required",
       description: "Normalized arguments",
     },
+    { key: "valid", priority: "required", description: "Validation result" },
+    {
+      key: "errors",
+      priority: "required",
+      description: "Zod validation errors",
+    },
+    {
+      key: "missingRequired",
+      priority: "required",
+      description: "Required fields absent from input",
+    },
+    {
+      key: "extraFields",
+      priority: "required",
+      description: "Unknown fields not in tool schema",
+    },
     {
       key: "warnings",
       priority: "high",
-      description: "Normalization warnings",
+      description: "Normalization and advisory warnings",
     },
-    { key: "valid", priority: "high", description: "Validation result" },
   ],
   progress_query: [
     { key: "type", priority: "required", description: "Progress entity type" },

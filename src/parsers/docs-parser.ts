@@ -10,13 +10,7 @@ import * as path from "node:path";
 
 // ─── Public types ─────────────────────────────────────────────────────────────
 
-export type DocKind =
-  | "readme"
-  | "adr"
-  | "changelog"
-  | "guide"
-  | "architecture"
-  | "other";
+export type DocKind = "readme" | "adr" | "changelog" | "guide" | "architecture" | "other";
 
 export interface CodeFence {
   /** Language tag (may be empty string) */
@@ -82,19 +76,10 @@ export class DocsParser {
    * @param filePath      Absolute or arbitrary path (used for id and kind inference).
    * @param workspaceRoot Used to compute relativePath.
    */
-  parseContent(
-    content: string,
-    filePath: string,
-    workspaceRoot: string,
-  ): ParsedDoc {
-    const relativePath = path
-      .relative(workspaceRoot, filePath)
-      .replace(/\\/g, "/");
+  parseContent(content: string, filePath: string, workspaceRoot: string): ParsedDoc {
+    const relativePath = path.relative(workspaceRoot, filePath).replace(/\\/g, "/");
 
-    const hash = crypto
-      .createHash("sha256")
-      .update(content, "utf-8")
-      .digest("hex");
+    const hash = crypto.createHash("sha256").update(content, "utf-8").digest("hex");
 
     const lines = content.split("\n");
     const sections = this.splitSections(lines);
@@ -121,8 +106,7 @@ export class DocsParser {
       /(?:^|\/)adr\//i.test(lower)
     )
       return "adr";
-    if (/\/docs\//i.test(`/${lower}`) || lower.startsWith("docs/"))
-      return "guide";
+    if (/\/docs\//i.test(`/${lower}`) || lower.startsWith("docs/")) return "guide";
 
     return "other";
   }
@@ -164,13 +148,7 @@ export class DocsParser {
       const body = currentBodyLines.join("\n");
       if (currentHeading.length > 0 || body.trim().length > 0) {
         sections.push(
-          this.buildSection(
-            sections.length,
-            currentHeading,
-            currentLevel,
-            currentStartLine,
-            body,
-          ),
+          this.buildSection(sections.length, currentHeading, currentLevel, currentStartLine, body),
         );
       }
       currentBodyLines = [];
@@ -228,11 +206,7 @@ export class DocsParser {
           currentStartLine = lineNumber - 1;
           continue;
         }
-        if (
-          /^-{3,}\s*$/.test(line) &&
-          prevLine.trim().length > 0 &&
-          !prevLine.startsWith("#")
-        ) {
+        if (/^-{3,}\s*$/.test(line) && prevLine.trim().length > 0 && !prevLine.startsWith("#")) {
           const headingText = currentBodyLines.pop()?.trim() ?? "";
           flush(lineNumber - 1);
           currentHeading = headingText;
@@ -284,10 +258,7 @@ export class DocsParser {
 
   // ── Extraction helpers ───────────────────────────────────────────────────────
 
-  private extractCodeFences(
-    body: string,
-    sectionStartLine: number,
-  ): CodeFence[] {
+  private extractCodeFences(body: string, sectionStartLine: number): CodeFence[] {
     const fences: CodeFence[] = [];
     const lines = body.split("\n");
     let inFence = false;
@@ -362,7 +333,7 @@ export class DocsParser {
 /**
  * Returns absolute paths to all markdown files within workspaceRoot
  * that belong to conventional documentation locations.
- * Excludes node_modules, dist, .git, .lxrag.
+ * Excludes node_modules, dist, .git, .lxdig.
  */
 export function findMarkdownFiles(workspaceRoot: string): string[] {
   const results: string[] = [];
@@ -370,7 +341,7 @@ export function findMarkdownFiles(workspaceRoot: string): string[] {
     "node_modules",
     "dist",
     ".git",
-    ".lxrag",
+    ".lxdig",
     ".next",
     "build",
     "coverage",

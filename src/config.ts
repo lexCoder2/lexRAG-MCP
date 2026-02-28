@@ -4,6 +4,7 @@
 
 import * as fs from "fs";
 import * as path from "path";
+import { logger } from "./utils/logger.js";
 
 export interface ArchitectureConfig {
   layers: LayerConfig[];
@@ -43,11 +44,33 @@ export interface Config {
       id: string;
       patterns: string[];
     }>;
+    /**
+     * Explicit test runner to invoke via `test_run` and `test:affected`.
+     * When omitted the runner is auto-detected from the test file extensions
+     * (e.g. .py → pytest, .rb → bundle exec rspec, .ts/.js → vitest).
+     * @example { "command": "pytest", "args": ["--tb=short"] }
+     */
+    testRunner?: {
+      command: string;
+      args?: string[];
+    };
+    /**
+     * Glob patterns used by the architecture engine to discover source files.
+     * Defaults to ["src/**\/*.{ts,tsx}"] when not specified.
+     * @example ["src/**\/*.py", "lib/**\/*.py"]
+     */
+    sourceGlobs?: string[];
+    /**
+     * Default file extension appended when generating new file paths (e.g. via
+     * arch_suggest). Defaults to ".ts". Use ".py", ".rb", ".go", etc. for
+     * non-TypeScript projects.
+     */
+    defaultExtension?: string;
   };
   progress?: ProgressConfig;
 }
 
-// Generic TypeScript server defaults — create .lxrag/config.json at your project root
+// Generic TypeScript server defaults — create .lxdig/config.json at your project root
 // to override with project-specific layers and rules.
 // Tip: run arch_suggest to get placement guidance; update this file if suggestions
 // look wrong (e.g. always "src/types/").
@@ -185,7 +208,7 @@ const DEFAULT_CONFIG: Config = {
 };
 
 export async function loadConfig(): Promise<Config> {
-  const configPath = path.join(process.cwd(), ".lxrag", "config.json");
+  const configPath = path.join(process.cwd(), ".lxdig", "config.json");
 
   try {
     if (fs.existsSync(configPath)) {
@@ -193,15 +216,14 @@ export async function loadConfig(): Promise<Config> {
       return JSON.parse(data);
     }
   } catch (error) {
-    console.warn("[Config] Error loading config file:", error);
+    logger.warn("[Config] Error loading config file:", error);
   }
 
   return DEFAULT_CONFIG;
 }
 
 export function saveConfig(config: Config, configPath?: string): void {
-  const targetPath =
-    configPath || path.join(process.cwd(), ".lxrag", "config.json");
+  const targetPath = configPath || path.join(process.cwd(), ".lxdig", "config.json");
   const dir = path.dirname(targetPath);
 
   if (!fs.existsSync(dir)) {

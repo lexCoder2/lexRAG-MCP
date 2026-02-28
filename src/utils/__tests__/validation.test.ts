@@ -17,12 +17,8 @@ describe("validation utils", () => {
   it("validateProjectId accepts valid IDs and rejects invalid ones", () => {
     expect(validateProjectId("proj_1-alpha")).toBe("proj_1-alpha");
     expect(() => validateProjectId(123)).toThrow("projectId must be a string");
-    expect(() => validateProjectId("")).toThrow(
-      "projectId must be between 1 and 128 characters",
-    );
-    expect(() => validateProjectId("bad/project")).toThrow(
-      "projectId can only contain",
-    );
+    expect(() => validateProjectId("")).toThrow("projectId must be between 1 and 128 characters");
+    expect(() => validateProjectId("bad/project")).toThrow("projectId can only contain");
   });
 
   it("validateFilePath enforces relative non-traversal paths", () => {
@@ -38,18 +34,12 @@ describe("validation utils", () => {
   it("validateQuery enforces type and max length", () => {
     expect(validateQuery("ok", 10)).toBe("ok");
     expect(() => validateQuery(42 as any)).toThrow("query must be a string");
-    expect(() => validateQuery("toolong", 3)).toThrow(
-      "query must be between 1 and 3 characters",
-    );
+    expect(() => validateQuery("toolong", 3)).toThrow("query must be between 1 and 3 characters");
   });
 
   it("validateCypherQuery enforces type and bounds", () => {
-    expect(validateCypherQuery("MATCH (n) RETURN n")).toBe(
-      "MATCH (n) RETURN n",
-    );
-    expect(() => validateCypherQuery(42 as any)).toThrow(
-      "Cypher query must be a string",
-    );
+    expect(validateCypherQuery("MATCH (n) RETURN n")).toBe("MATCH (n) RETURN n");
+    expect(() => validateCypherQuery(42 as any)).toThrow("Cypher query must be a string");
     expect(() => validateCypherQuery("")).toThrow(
       "Cypher query must be between 1 and 50000 characters",
     );
@@ -72,12 +62,8 @@ describe("validation utils", () => {
 
   it("validateMode enforces allowed list", () => {
     expect(validateMode("hybrid", ["local", "hybrid"])).toBe("hybrid");
-    expect(() => validateMode(1 as any, ["a"])).toThrow(
-      "mode must be a string",
-    );
-    expect(() => validateMode("global", ["local", "hybrid"])).toThrow(
-      "mode must be one of",
-    );
+    expect(() => validateMode(1 as any, ["a"])).toThrow("mode must be a string");
+    expect(() => validateMode("global", ["local", "hybrid"])).toThrow("mode must be one of");
   });
 
   it("createValidationError includes field, reason, and value preview", () => {
@@ -88,9 +74,7 @@ describe("validation utils", () => {
   });
 
   it("extractProjectIdFromScopedId falls back safely", () => {
-    expect(extractProjectIdFromScopedId("proj:file:src/a.ts", "dflt")).toBe(
-      "proj",
-    );
+    expect(extractProjectIdFromScopedId("proj:file:src/a.ts", "dflt")).toBe("proj");
     expect(extractProjectIdFromScopedId("", "dflt")).toBe("dflt");
     expect(extractProjectIdFromScopedId(" :type:name", "dflt")).toBe("dflt");
   });

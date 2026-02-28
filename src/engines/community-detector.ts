@@ -5,6 +5,7 @@
  */
 
 import type MemgraphClient from "../graph/client.js";
+import { logger } from "../utils/logger.js";
 
 interface CommunityMember {
   id: string;
@@ -82,11 +83,7 @@ export default class CommunityDetector {
         { projectId },
       );
 
-      if (
-        response.error ||
-        !Array.isArray(response.data) ||
-        response.data.length === 0
-      ) {
+      if (response.error || !Array.isArray(response.data) || response.data.length === 0) {
         return null;
       }
 
@@ -112,7 +109,7 @@ export default class CommunityDetector {
       }
 
       await this.writeCommunities(projectId, grouped, "leiden");
-      console.error(
+      logger.error(
         `[community] MAGE Leiden: ${grouped.size} communities across ${communityMap.size} member node(s) for project ${projectId}`,
       );
       return {
@@ -149,7 +146,7 @@ export default class CommunityDetector {
     }
 
     await this.writeCommunities(projectId, numericGrouped, "dir");
-    console.error(
+    logger.error(
       `[community] directory heuristic: ${grouped.size} communities across ${members.length} member node(s) for project ${projectId}`,
     );
     return {
@@ -167,7 +164,6 @@ export default class CommunityDetector {
     grouped: Map<number, CommunityMember[]>,
     prefix: string,
   ): Promise<void> {
-    let idx = 0;
     for (const [cid, group] of grouped.entries()) {
       const communityId = `${projectId}::community::${prefix}::${cid}`;
       const label = this.labelForGroup(group);
@@ -202,8 +198,6 @@ export default class CommunityDetector {
           { nodeId: member.id, projectId, communityId },
         );
       }
-
-      idx += 1;
     }
   }
 

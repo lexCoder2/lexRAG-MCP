@@ -137,9 +137,7 @@ describe("ToolHandlers contract normalization", () => {
 
     expect(normalizeResult.normalized.workspaceRoot).toBe("/tmp/project-a");
     expect(normalizeResult.normalized.workspacePath).toBeUndefined();
-    expect(normalizeResult.warnings).toContain(
-      "mapped workspacePath -> workspaceRoot",
-    );
+    expect(normalizeResult.warnings).toContain("mapped workspacePath -> workspaceRoot");
   });
 
   it("updates active project context through graph_set_workspace", async () => {
@@ -166,9 +164,7 @@ describe("ToolHandlers contract normalization", () => {
     const parsed = JSON.parse(response);
 
     expect(parsed.ok).toBe(true);
-    expect(parsed.contractWarnings).toContain(
-      "mapped workspacePath -> workspaceRoot",
-    );
+    expect(parsed.contractWarnings).toContain("mapped workspacePath -> workspaceRoot");
     expect(parsed.data.projectContext.workspaceRoot).toBe(tempRoot);
     expect(parsed.data.projectContext.sourceDir).toBe(tempSrc);
     expect(parsed.data.projectContext.projectId).toBe("temp-project");
@@ -187,9 +183,7 @@ describe("ToolHandlers contract normalization", () => {
       config: {},
     });
 
-    const fallbackRoot = fs.mkdtempSync(
-      path.join(os.tmpdir(), "graph-mounted-"),
-    );
+    const fallbackRoot = fs.mkdtempSync(path.join(os.tmpdir(), "graph-mounted-"));
     const fallbackSrc = path.join(fallbackRoot, "src");
     fs.mkdirSync(fallbackSrc);
 
@@ -231,9 +225,7 @@ describe("ToolHandlers contract normalization", () => {
     const handlers = new ToolHandlers({
       index,
       memgraph: {
-        executeCypher: vi
-          .fn()
-          .mockResolvedValue({ data: [], error: undefined }),
+        executeCypher: vi.fn().mockResolvedValue({ data: [], error: undefined }),
         queryNaturalLanguage: vi.fn(),
         isConnected: vi.fn().mockReturnValue(true),
       } as any,
@@ -262,22 +254,18 @@ describe("ToolHandlers contract normalization", () => {
         });
       });
 
-      const healthA = await runWithRequestContext(
-        { sessionId: "session-a" },
-        async () => handlers.graph_health({ profile: "debug" }),
+      const healthA = await runWithRequestContext({ sessionId: "session-a" }, async () =>
+        handlers.graph_health({ profile: "debug" }),
       );
-      const healthB = await runWithRequestContext(
-        { sessionId: "session-b" },
-        async () => handlers.graph_health({ profile: "debug" }),
+      const healthB = await runWithRequestContext({ sessionId: "session-b" }, async () =>
+        handlers.graph_health({ profile: "debug" }),
       );
 
       const parsedA = JSON.parse(healthA);
       const parsedB = JSON.parse(healthB);
 
       if (!parsedA.ok || !parsedB.ok) {
-        throw new Error(
-          `Unexpected graph_health failure: A=${healthA} B=${healthB}`,
-        );
+        throw new Error(`Unexpected graph_health failure: A=${healthA} B=${healthB}`);
       }
 
       expect(parsedA.ok).toBe(true);
@@ -331,9 +319,7 @@ describe("ToolHandlers contract normalization", () => {
         executeCypher,
         queryNaturalLanguage: vi.fn(),
         isConnected: vi.fn().mockReturnValue(true),
-        loadProjectGraph: vi
-          .fn()
-          .mockResolvedValue({ nodes: [], relationships: [] }),
+        loadProjectGraph: vi.fn().mockResolvedValue({ nodes: [], relationships: [] }),
       } as any,
       config: {},
     });
@@ -374,30 +360,10 @@ describe("ToolHandlers regressions", () => {
       projectId: "proj",
     });
 
-    index.addRelationship(
-      "rel1",
-      "proj:file:src/a.ts",
-      "proj:import:a->b",
-      "IMPORTS",
-    );
-    index.addRelationship(
-      "rel2",
-      "proj:import:a->b",
-      "proj:file:src/b.ts",
-      "REFERENCES",
-    );
-    index.addRelationship(
-      "rel3",
-      "proj:file:src/b.ts",
-      "proj:import:b->a",
-      "IMPORTS",
-    );
-    index.addRelationship(
-      "rel4",
-      "proj:import:b->a",
-      "proj:file:src/a.ts",
-      "REFERENCES",
-    );
+    index.addRelationship("rel1", "proj:file:src/a.ts", "proj:import:a->b", "IMPORTS");
+    index.addRelationship("rel2", "proj:import:a->b", "proj:file:src/b.ts", "REFERENCES");
+    index.addRelationship("rel3", "proj:file:src/b.ts", "proj:import:b->a", "IMPORTS");
+    index.addRelationship("rel4", "proj:import:b->a", "proj:file:src/a.ts", "REFERENCES");
 
     const handlers = new ToolHandlers({
       index,
@@ -507,20 +473,14 @@ describe("ToolHandlers regressions", () => {
 
     expect(parsed.ok).toBe(true);
     expect(parsed.data.file).toBe("src/tools/tool-handlers.ts");
-    expect(selectAffectedTests).toHaveBeenCalledWith(
-      ["src/tools/tool-handlers.ts"],
-      true,
-      2,
-    );
+    expect(selectAffectedTests).toHaveBeenCalledWith(["src/tools/tool-handlers.ts"], true, 2);
   });
 });
 
 describe("ToolHandlers P0 integration", () => {
   it("returns completed or queued graph_rebuild with resolved workspace context", async () => {
     const index = new GraphIndexManager();
-    const executeCypher = vi
-      .fn()
-      .mockResolvedValue({ data: [], error: undefined });
+    const executeCypher = vi.fn().mockResolvedValue({ data: [], error: undefined });
     const build = vi.fn().mockResolvedValue({
       success: true,
       duration: 18,
@@ -538,9 +498,7 @@ describe("ToolHandlers P0 integration", () => {
         executeCypher,
         queryNaturalLanguage: vi.fn(),
         isConnected: vi.fn().mockReturnValue(true),
-        loadProjectGraph: vi
-          .fn()
-          .mockResolvedValue({ nodes: [], relationships: [] }),
+        loadProjectGraph: vi.fn().mockResolvedValue({ nodes: [], relationships: [] }),
       } as any,
       config: {},
       orchestrator: {
@@ -606,9 +564,7 @@ describe("ToolHandlers P0 integration", () => {
         executeCypher,
         queryNaturalLanguage: vi.fn(),
         isConnected: vi.fn().mockReturnValue(true),
-        loadProjectGraph: vi
-          .fn()
-          .mockResolvedValue({ nodes: [], relationships: [] }),
+        loadProjectGraph: vi.fn().mockResolvedValue({ nodes: [], relationships: [] }),
       } as any,
       config: {},
     });
@@ -636,14 +592,10 @@ describe("ToolHandlers P0 integration", () => {
     const handlers = new ToolHandlers({
       index,
       memgraph: {
-        executeCypher: vi
-          .fn()
-          .mockResolvedValue({ data: [], error: undefined }),
+        executeCypher: vi.fn().mockResolvedValue({ data: [], error: undefined }),
         queryNaturalLanguage: vi.fn(),
         isConnected: vi.fn().mockReturnValue(true),
-        loadProjectGraph: vi
-          .fn()
-          .mockResolvedValue({ nodes: [], relationships: [] }),
+        loadProjectGraph: vi.fn().mockResolvedValue({ nodes: [], relationships: [] }),
       } as any,
       config: {},
     });
@@ -719,9 +671,7 @@ describe("ToolHandlers P0 integration", () => {
       ],
       error: undefined,
     });
-    const retrieve = vi
-      .fn()
-      .mockResolvedValue([{ nodeId: "node-1", score: 0.8 }]);
+    const retrieve = vi.fn().mockResolvedValue([{ nodeId: "node-1", score: 0.8 }]);
 
     const handlers = new ToolHandlers({
       index,
@@ -729,9 +679,7 @@ describe("ToolHandlers P0 integration", () => {
         executeCypher,
         queryNaturalLanguage: vi.fn(),
         isConnected: vi.fn().mockReturnValue(true),
-        loadProjectGraph: vi
-          .fn()
-          .mockResolvedValue({ nodes: [], relationships: [] }),
+        loadProjectGraph: vi.fn().mockResolvedValue({ nodes: [], relationships: [] }),
       } as any,
       config: {},
     });
@@ -899,10 +847,7 @@ describe("ToolHandlers architecture and test contracts", () => {
       memgraph: {
         isConnected: vi.fn().mockReturnValue(true),
         executeCypher: vi.fn().mockResolvedValue({
-          data: [
-            { path: "src/store/graphStore.ts" },
-            { path: "src/hooks/useGraphController.ts" },
-          ],
+          data: [{ path: "src/store/graphStore.ts" }, { path: "src/hooks/useGraphController.ts" }],
         }),
         queryNaturalLanguage: vi.fn(),
       } as any,
@@ -924,12 +869,8 @@ describe("ToolHandlers architecture and test contracts", () => {
 
     expect(parsed.ok).toBe(true);
     // directImpact must reflect graph traversal results, not just test files
-    expect(parsed.data.analysis.directImpact).toContain(
-      "src/store/graphStore.ts",
-    );
-    expect(parsed.data.analysis.directImpact).toContain(
-      "src/hooks/useGraphController.ts",
-    );
+    expect(parsed.data.analysis.directImpact).toContain("src/store/graphStore.ts");
+    expect(parsed.data.analysis.directImpact).toContain("src/hooks/useGraphController.ts");
   });
 });
 
@@ -1067,12 +1008,7 @@ describe("ToolHandlers explanation and test execution contracts", () => {
       path: "src/math.ts",
       projectId: "proj",
     });
-    index.addRelationship(
-      "contains-1",
-      "proj:file:src/math.ts",
-      "proj:fn:add",
-      "CONTAINS",
-    );
+    index.addRelationship("contains-1", "proj:file:src/math.ts", "proj:fn:add", "CONTAINS");
 
     const handlers = new ToolHandlers({
       index,
@@ -1184,9 +1120,7 @@ describe("ToolHandlers semantic and temporal contracts", () => {
     const handlers = new ToolHandlers({
       index: new GraphIndexManager(),
       memgraph: {
-        executeCypher: vi
-          .fn()
-          .mockResolvedValue({ data: [], error: undefined }),
+        executeCypher: vi.fn().mockResolvedValue({ data: [], error: undefined }),
         queryNaturalLanguage: vi.fn(),
         isConnected: vi.fn().mockReturnValue(false),
       } as any,
@@ -1226,30 +1160,21 @@ describe("ToolHandlers semantic and temporal contracts", () => {
         path: "src/parsers/input.ts",
       }),
     );
-    expect(findSimilar).toHaveBeenCalledWith(
-      "parse input",
-      "function",
-      3,
-      expect.any(String),
-    );
+    expect(findSimilar).toHaveBeenCalledWith("parse input", "function", 3, expect.any(String));
   });
 
   it("semantic_slice returns code and symbol metadata for resolved symbol", async () => {
     const handlers = new ToolHandlers({
       index: new GraphIndexManager(),
       memgraph: {
-        executeCypher: vi
-          .fn()
-          .mockResolvedValue({ data: [], error: undefined }),
+        executeCypher: vi.fn().mockResolvedValue({ data: [], error: undefined }),
         queryNaturalLanguage: vi.fn(),
         isConnected: vi.fn().mockReturnValue(false),
       } as any,
       config: {},
     });
 
-    const workspaceRoot = fs.mkdtempSync(
-      path.join(os.tmpdir(), "semantic-slice-"),
-    );
+    const workspaceRoot = fs.mkdtempSync(path.join(os.tmpdir(), "semantic-slice-"));
     const srcDir = path.join(workspaceRoot, "src");
     fs.mkdirSync(srcDir);
     const filePath = path.join(srcDir, "sample.ts");
@@ -1329,10 +1254,7 @@ describe("ToolHandlers semantic and temporal contracts", () => {
 
   it("diff_since returns normalized added/removed/modified payload", async () => {
     const executeCypher = vi.fn().mockImplementation((query: string) => {
-      if (
-        query.includes("MATCH (tx:GRAPH_TX") &&
-        query.includes("RETURN tx.id AS id")
-      ) {
+      if (query.includes("MATCH (tx:GRAPH_TX") && query.includes("RETURN tx.id AS id")) {
         return Promise.resolve({
           data: [{ id: "tx-1" }, { id: "tx-2" }],
           error: undefined,
@@ -1522,9 +1444,7 @@ describe("ToolHandlers coordination and setup breadth contracts", () => {
     });
     (handlers as any).coordinationEngine = { overview, status };
 
-    const listAll = JSON.parse(
-      await handlers.callTool("agent_status", { profile: "debug" }),
-    );
+    const listAll = JSON.parse(await handlers.callTool("agent_status", { profile: "debug" }));
     expect(listAll.ok).toBe(true);
     expect(listAll.data.mode).toBe("overview");
 
@@ -1588,9 +1508,7 @@ describe("ToolHandlers coordination and setup breadth contracts", () => {
 
       expect(dryRun.ok).toBe(true);
       expect(dryRun.data.dryRun).toBe(true);
-      expect(String(dryRun.data.targetPath)).toContain(
-        ".github/copilot-instructions.md",
-      );
+      expect(String(dryRun.data.targetPath)).toContain(".github/copilot-instructions.md");
     } finally {
       fs.rmSync(tempRoot, { recursive: true, force: true });
     }
@@ -1633,9 +1551,7 @@ describe("ToolHandlers deeper integration contracts", () => {
       claimId: "claim-2",
       conflicts: [{ claimId: "claim-1", targetId: "task:1" }],
     });
-    const release = vi
-      .fn()
-      .mockResolvedValue({ found: true, alreadyClosed: false });
+    const release = vi.fn().mockResolvedValue({ found: true, alreadyClosed: false });
     (handlers as any).coordinationEngine = { claim, release };
 
     const claimResponse = JSON.parse(
@@ -1733,11 +1649,7 @@ describe("ToolHandlers deeper integration contracts", () => {
 
       expect(response.ok).toBe(true);
       expect(response.data.status).toBe("created");
-      expect(
-        fs.existsSync(
-          path.join(tempRoot, ".github", "copilot-instructions.md"),
-        ),
-      ).toBe(true);
+      expect(fs.existsSync(path.join(tempRoot, ".github", "copilot-instructions.md"))).toBe(true);
     } finally {
       fs.rmSync(tempRoot, { recursive: true, force: true });
     }
@@ -1748,9 +1660,7 @@ describe("ToolHandlers deeper integration contracts", () => {
     const handlers = new ToolHandlers({
       index: new GraphIndexManager(),
       memgraph: {
-        executeCypher: vi
-          .fn()
-          .mockResolvedValue({ data: [], error: undefined }),
+        executeCypher: vi.fn().mockResolvedValue({ data: [], error: undefined }),
         queryNaturalLanguage: vi.fn(),
         isConnected: vi.fn().mockReturnValue(false),
       } as any,
@@ -1777,13 +1687,9 @@ describe("ToolHandlers deeper integration contracts", () => {
 
       expect(response.ok).toBe(true);
       expect(
-        response.data.steps.some(
-          (s: any) => s.step === "graph_set_workspace" && s.status === "ok",
-        ),
+        response.data.steps.some((s: any) => s.step === "graph_set_workspace" && s.status === "ok"),
       ).toBe(true);
-      expect(
-        response.data.steps.some((s: any) => s.step === "graph_rebuild"),
-      ).toBe(true);
+      expect(response.data.steps.some((s: any) => s.step === "graph_rebuild")).toBe(true);
       expect(build).toHaveBeenCalled();
     } finally {
       fs.rmSync(tempRoot, { recursive: true, force: true });
@@ -1830,8 +1736,7 @@ describe("ToolHandlers deeper integration contracts", () => {
       expect(Array.isArray(response.data.findings)).toBe(true);
       expect(
         response.data.findings.some(
-          (f: any) =>
-            f.type === "doc" || f.type === "code" || f.type === "structure",
+          (f: any) => f.type === "doc" || f.type === "code" || f.type === "structure",
         ),
       ).toBe(true);
     } finally {
@@ -1843,9 +1748,7 @@ describe("ToolHandlers deeper integration contracts", () => {
 describe("ToolHandlers watcher callback integration", () => {
   it("forwards changedFiles to incremental rebuild and records tx when memgraph is connected", async () => {
     const build = vi.fn().mockResolvedValue({ success: true });
-    const executeCypher = vi
-      .fn()
-      .mockResolvedValue({ data: [], error: undefined });
+    const executeCypher = vi.fn().mockResolvedValue({ data: [], error: undefined });
 
     const handlers = new ToolHandlers({
       index: new GraphIndexManager(),
@@ -1886,17 +1789,13 @@ describe("ToolHandlers watcher callback integration", () => {
       }),
     );
 
-    expect((handlers as any).isProjectEmbeddingsReady("proj-watch")).toBe(
-      false,
-    );
+    expect((handlers as any).isProjectEmbeddingsReady("proj-watch")).toBe(false);
     expect((handlers as any).lastGraphRebuildMode).toBe("incremental");
   });
 
   it("skips tx write when memgraph is disconnected and still rebuilds incrementally", async () => {
     const build = vi.fn().mockResolvedValue({ success: true });
-    const executeCypher = vi
-      .fn()
-      .mockResolvedValue({ data: [], error: undefined });
+    const executeCypher = vi.fn().mockResolvedValue({ data: [], error: undefined });
 
     const handlers = new ToolHandlers({
       index: new GraphIndexManager(),
@@ -2027,16 +1926,12 @@ describe("Medium-priority bug regressions (N6/N8/N9)", () => {
   it("N8: task_update adds rationale to DECISION episode metadata on completion", async () => {
     const handlers = makeHandlers();
 
-    const updateTask = vi
-      .fn()
-      .mockReturnValue({ id: "task-1", status: "completed" });
+    const updateTask = vi.fn().mockReturnValue({ id: "task-1", status: "completed" });
     const persistTaskUpdate = vi.fn().mockResolvedValue(true);
     (handlers as any).progressEngine = { updateTask, persistTaskUpdate };
 
     const addEpisode = vi.fn().mockResolvedValue("ep-123");
-    const reflect = vi
-      .fn()
-      .mockResolvedValue({ reflectionId: "ref-1", learningsCreated: 0 });
+    const reflect = vi.fn().mockResolvedValue({ reflectionId: "ref-1", learningsCreated: 0 });
     (handlers as any).episodeEngine = { add: addEpisode, reflect };
 
     const onTaskCompleted = vi.fn().mockResolvedValue(undefined);
@@ -2049,9 +1944,7 @@ describe("Medium-priority bug regressions (N6/N8/N9)", () => {
     });
 
     // The DECISION episode must be added with metadata.rationale
-    const decisionCall = addEpisode.mock.calls.find(
-      (call: any[]) => call[0]?.type === "DECISION",
-    );
+    const decisionCall = addEpisode.mock.calls.find((call: any[]) => call[0]?.type === "DECISION");
     expect(decisionCall).toBeDefined();
     const episodeArg = decisionCall![0];
     expect(episodeArg.metadata?.rationale).toBeDefined();
@@ -2077,12 +1970,7 @@ describe("Medium-priority bug regressions (N6/N8/N9)", () => {
     });
     // dependentFn -[:CALLS]-> targetFile (incoming relationship to targetFile)
     // addRelationship signature: (id, from, to, type)
-    (handlers as any).context.index.addRelationship(
-      "rel-1",
-      dependentFnId,
-      targetFileId,
-      "CALLS",
-    );
+    (handlers as any).context.index.addRelationship("rel-1", dependentFnId, targetFileId, "CALLS");
 
     const response = await handlers.code_explain({
       element: "src/graph/client.ts",

@@ -10,6 +10,7 @@ import { globSync } from "glob";
 import type { GraphIndexManager } from "../graph/index.js";
 import type { MemgraphClient } from "../graph/client.js";
 import type { CypherStatement } from "../graph/types.js";
+import { logger } from "../utils/logger.js";
 
 export interface LayerDefinition {
   id: string;
@@ -52,16 +53,28 @@ export class ArchitectureEngine {
   private layers: Map<string, LayerDefinition>;
   private rules: ArchitectureRule[];
   private workspaceRoot: string;
+  /** Glob patterns used to discover source files (e.g. for validation/circular-dep scan). */
+  private sourceGlobs: string[];
+  /** Default file extension used when generating suggested paths. */
+  private defaultExtension: string;
 
   constructor(
     layers: LayerDefinition[],
     rules: ArchitectureRule[],
     _index: GraphIndexManager,
     workspaceRoot?: string,
+    options?: {
+      /** Override the glob patterns used to scan source files. Defaults to ["src/**\/*.{ts,tsx}"]. */
+      sourceGlobs?: string[];
+      /** Default extension for generated file paths. Defaults to ".ts". */
+      defaultExtension?: string;
+    },
   ) {
     this.layers = new Map(layers.map((l) => [l.id, l]));
     this.rules = rules;
     this.workspaceRoot = workspaceRoot ?? process.cwd();
+    this.sourceGlobs = options?.sourceGlobs ?? ["src/**/*.{ts,tsx}"];
+    this.defaultExtension = options?.defaultExtension ?? ".ts";
   }
 
   /**
@@ -76,11 +89,20 @@ export class ArchitectureEngine {
     if (files && files.length > 0) {
       filesToCheck = files;
     } else {
-      // Scan all TS/TSX files in src/
-      filesToCheck = globSync("src/**/*.{ts,tsx}", {
-        cwd: projectRoot,
-        ignore: ["**/node_modules/**", "**/*.test.ts", "**/*.test.tsx"],
-      });
+      // Scan source files using configured globs (language-agnostic)
+      filesToCheck = this.sourceGlobs.flatMap((pattern) =>
+        globSync(pattern, {
+          cwd: projectRoot,
+          ignore: [
+            "**/node_modules/**",
+            "**/*.test.*",
+            "**/*.spec.*",
+            "**/test_*.py",
+            "**/*_test.go",
+            "**/*_spec.rb",
+          ],
+        }),
+      );
     }
 
     for (const filePath of filesToCheck) {
@@ -93,23 +115,17 @@ export class ArchitectureEngine {
           file: filePath,
           layer: "unknown",
           message: `File not assigned to any layer: ${filePath}`,
-          suggestion:
-            "Update .lxrag/config.json with appropriate layer path pattern",
+          suggestion: "Update .lxdig/config.json with appropriate layer path pattern",
         });
         continue;
       }
 
       // Extract imports from file
-      const imports = this.extractImportsFromFile(
-        path.join(projectRoot, filePath),
-      );
+      const imports = this.extractImportsFromFile(path.join(projectRoot, filePath));
 
       for (const imp of imports) {
         // Skip external imports
-        if (
-          imp.startsWith("@") ||
-          (imp.startsWith(".") === false && !imp.startsWith("src"))
-        ) {
+        if (imp.startsWith("@") || (imp.startsWith(".") === false && !imp.startsWith("src"))) {
           continue;
         }
 
@@ -133,10 +149,7 @@ export class ArchitectureEngine {
         }
 
         // Check forbidden imports
-        if (
-          layer.cannotImport &&
-          this.isForbiddenImport(layer, importedLayer)
-        ) {
+        if (layer.cannotImport && this.isForbiddenImport(layer, importedLayer)) {
           violations.push({
             type: "layer-violation",
             severity: "error",
@@ -202,20 +215,66 @@ export class ArchitectureEngine {
   }
 
   /**
-   * Extract import statements from a source file
+   * Extract import statements from a source file.
+   * Dispatches to language-specific logic based on the file extension.
+   * Supported: TypeScript/JavaScript (.ts, .tsx, .js, .jsx, .mjs, .cjs),
+   * Python (.py), Ruby (.rb), Go (.go).
    */
   private extractImportsFromFile(filePath: string): string[] {
+    const ext = path.extname(filePath).toLowerCase();
     try {
       const content = fs.readFileSync(filePath, "utf-8");
       const imports: Set<string> = new Set();
 
-      // Match: import/export from 'path' or "path"
-      const importRegex =
-        /(?:import|export)\s+(?:[^"']*\s+)?from\s+['"]([^'"]+)['"]/g;
-      let match;
-
-      while ((match = importRegex.exec(content)) !== null) {
-        imports.add(match[1]);
+      if (
+        ext === ".ts" ||
+        ext === ".tsx" ||
+        ext === ".js" ||
+        ext === ".jsx" ||
+        ext === ".mjs" ||
+        ext === ".cjs"
+      ) {
+        // ES module: import/export ... from '...'
+        const importRegex = /(?:import|export)\s+(?:[^"']*\s+)?from\s+['"]([^'"]+)['"]/g;
+        let match;
+        while ((match = importRegex.exec(content)) !== null) {
+          imports.add(match[1]);
+        }
+      } else if (ext === ".py") {
+        // Python: from module.path import ... / import module.path
+        const fromRegex = /^from\s+([\w.]+)\s+import\s+/gm;
+        const importRegex = /^import\s+([\w.]+)/gm;
+        let match;
+        while ((match = fromRegex.exec(content)) !== null) {
+          // Convert dotted module path to slash-separated path
+          imports.add(match[1].replace(/\./g, "/"));
+        }
+        while ((match = importRegex.exec(content)) !== null) {
+          imports.add(match[1].replace(/\./g, "/"));
+        }
+      } else if (ext === ".rb") {
+        // Ruby: require 'path' / require_relative 'path'
+        const reqRegex = /require(?:_relative)?\s+['"]([^'"]+)['"]/g;
+        let match;
+        while ((match = reqRegex.exec(content)) !== null) {
+          imports.add(match[1]);
+        }
+      } else if (ext === ".go") {
+        // Go: import "path" (single or block)
+        const blockRegex = /import\s*\(([\s\S]*?)\)/g;
+        const singleRegex = /import\s+"([^"]+)"/g;
+        let match;
+        while ((match = blockRegex.exec(content)) !== null) {
+          const block = match[1];
+          const lineRegex = /"([^"]+)"/g;
+          let lineMatch;
+          while ((lineMatch = lineRegex.exec(block)) !== null) {
+            imports.add(lineMatch[1]);
+          }
+        }
+        while ((match = singleRegex.exec(content)) !== null) {
+          imports.add(match[1]);
+        }
       }
 
       return Array.from(imports);
@@ -254,14 +313,25 @@ export class ArchitectureEngine {
       relPath = path.relative(projectRoot, resolvedPath).replace(/\\/g, "/");
     }
 
-    // Try different extensions
-    const candidates = [
-      relPath,
-      `${relPath}.ts`,
-      `${relPath}.tsx`,
-      `${relPath}/index.ts`,
-      `${relPath}/index.tsx`,
-    ];
+    // Try different extensions based on the source file's language
+    const fromExt = path.extname(fromPath).toLowerCase();
+    let candidates: string[];
+    if (fromExt === ".py") {
+      candidates = [relPath, `${relPath}.py`, `${relPath}/__init__.py`];
+    } else if (fromExt === ".rb") {
+      candidates = [relPath, `${relPath}.rb`];
+    } else if (fromExt === ".go") {
+      candidates = [relPath];
+    } else {
+      // JS/TS (default)
+      candidates = [
+        relPath,
+        `${relPath}.ts`,
+        `${relPath}.tsx`,
+        `${relPath}/index.ts`,
+        `${relPath}/index.tsx`,
+      ];
+    }
 
     for (const candidate of candidates) {
       const fullPath = path.join(projectRoot, candidate);
@@ -270,19 +340,17 @@ export class ArchitectureEngine {
       }
     }
 
-    // Return best guess if file doesn't exist yet
-    return relPath.endsWith(".ts") || relPath.endsWith(".tsx")
-      ? relPath
-      : `${relPath}.ts`;
+    // Return best guess if file doesn't exist yet (use source extension or configured default)
+    const fromExt2 = path.extname(fromPath).toLowerCase();
+    const bestExt = fromExt2 || this.defaultExtension;
+    if (relPath.includes(".")) return relPath;
+    return relPath.endsWith(bestExt) ? relPath : `${relPath}${bestExt}`;
   }
 
   /**
    * Check if import from one layer to another is allowed
    */
-  private isImportAllowed(
-    fromLayer: LayerDefinition,
-    toLayer: LayerDefinition,
-  ): boolean {
+  private isImportAllowed(fromLayer: LayerDefinition, toLayer: LayerDefinition): boolean {
     // Can always import from same layer
     if (fromLayer.id === toLayer.id) {
       return true;
@@ -299,10 +367,7 @@ export class ArchitectureEngine {
   /**
    * Check if import is explicitly forbidden
    */
-  private isForbiddenImport(
-    fromLayer: LayerDefinition,
-    toLayer: LayerDefinition,
-  ): boolean {
+  private isForbiddenImport(fromLayer: LayerDefinition, toLayer: LayerDefinition): boolean {
     if (!fromLayer.cannotImport) {
       return false;
     }
@@ -321,10 +386,19 @@ export class ArchitectureEngine {
 
     // Build import graph
     const importGraph = new Map<string, string[]>();
-    const sourceFiles = globSync("src/**/*.{ts,tsx}", {
-      cwd: projectRoot,
-      ignore: ["**/node_modules/**", "**/*.test.ts", "**/*.test.tsx"],
-    });
+    const sourceFiles = this.sourceGlobs.flatMap((pattern) =>
+      globSync(pattern, {
+        cwd: projectRoot,
+        ignore: [
+          "**/node_modules/**",
+          "**/*.test.*",
+          "**/*.spec.*",
+          "**/test_*.py",
+          "**/*_test.go",
+          "**/*_spec.rb",
+        ],
+      }),
+    );
 
     for (const file of sourceFiles) {
       const imports = this.extractImportsFromFile(path.join(projectRoot, file));
@@ -387,8 +461,7 @@ export class ArchitectureEngine {
           file: cycle[0],
           layer: this.determineLayer(cycle[0])?.id || "unknown",
           message: `Circular dependency detected: ${cycle.slice(0, 3).join(" -> ")}...`,
-          suggestion:
-            "Break the circular dependency by moving code to a shared utility module",
+          suggestion: "Break the circular dependency by moving code to a shared utility module",
         });
       }
     }
@@ -482,31 +555,34 @@ export class ArchitectureEngine {
     };
   }
 
-  private getSuggestedPath(
-    layer: LayerDefinition,
-    codeName: string,
-    codeType: string,
-  ): string {
+  private getSuggestedPath(layer: LayerDefinition, codeName: string, codeType: string): string {
     // Use first path pattern and apply naming convention
     const basePattern = layer.paths[0];
     const basePath = basePattern.replace("/**", "").replace(/\/\*$/, "");
 
-    let fileName = codeName;
+    let fileName: string;
     if (codeType === "component") {
-      fileName = codeName.endsWith(".tsx") ? codeName : `${codeName}.tsx`;
+      // Components typically use .tsx (React) — honour configured extension if it differs
+      const compExt = this.defaultExtension === ".tsx" ? ".tsx" : `${this.defaultExtension}`;
+      const hasExt = /\.[^/\\]+$/.test(codeName);
+      fileName = hasExt ? codeName : `${codeName}${compExt}`;
     } else if (codeType === "hook") {
       fileName = codeName.startsWith("use") ? codeName : `use${codeName}`;
-      fileName = fileName.endsWith(".ts") ? fileName : `${fileName}.ts`;
+      const hasExt = /\.[^/\\]+$/.test(fileName);
+      fileName = hasExt ? fileName : `${fileName}${this.defaultExtension}`;
     } else if (codeType === "service") {
-      // Avoid double-suffix: "GraphDataService" + service → "GraphDataService.ts"
-      if (codeName.endsWith("Service.ts") || codeName.endsWith("Service")) {
-        fileName = codeName.endsWith(".ts") ? codeName : `${codeName}.ts`;
+      const hasExt = /\.[^/\\]+$/.test(codeName);
+      if (hasExt) {
+        fileName = codeName;
+      } else if (codeName.endsWith("Service")) {
+        fileName = `${codeName}${this.defaultExtension}`;
       } else {
-        fileName = `${codeName}Service.ts`;
+        fileName = `${codeName}Service${this.defaultExtension}`;
       }
     } else {
-      // Default: ensure .ts extension
-      fileName = codeName.endsWith(".ts") ? codeName : `${codeName}.ts`;
+      // Default: ensure configured extension
+      const hasExt = /\.[^/\\]+$/.test(codeName);
+      fileName = hasExt ? codeName : `${codeName}${this.defaultExtension}`;
     }
 
     return `${basePath}/${fileName}`;
@@ -519,7 +595,7 @@ export class ArchitectureEngine {
     client: MemgraphClient,
     violations: ValidationViolation[],
   ): Promise<void> {
-    console.error(`\n📝 Writing ${violations.length} violations to Memgraph...`);
+    logger.error(`\n📝 Writing ${violations.length} violations to Memgraph...`);
 
     const statements: CypherStatement[] = [];
 
@@ -584,12 +660,10 @@ export class ArchitectureEngine {
     // Check for errors
     const errors = results.filter((r) => r.error);
     if (errors.length > 0) {
-      console.error(`⚠️  ${errors.length} Cypher statements failed:`);
-      errors.slice(0, 3).forEach((e) => console.error(`   - ${e.error}`));
+      logger.error(`⚠️  ${errors.length} Cypher statements failed:`);
+      errors.slice(0, 3).forEach((e) => logger.error(`   - ${e.error}`));
     } else {
-      console.error(
-        `✅ Successfully wrote ${violations.length} violations to graph`,
-      );
+      logger.error(`✅ Successfully wrote ${violations.length} violations to graph`);
     }
   }
 
@@ -598,9 +672,7 @@ export class ArchitectureEngine {
    * Called when project context changes
    */
   reload(_index: GraphIndexManager, projectId?: string, workspaceRoot?: string): void {
-    console.error(
-      `[ArchitectureEngine] Reloading architecture validation (projectId=${projectId})`,
-    );
+    logger.error(`[ArchitectureEngine] Reloading architecture validation (projectId=${projectId})`);
     if (workspaceRoot) {
       this.workspaceRoot = workspaceRoot;
     }

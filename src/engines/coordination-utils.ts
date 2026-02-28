@@ -4,21 +4,14 @@
  * @remarks Utility functions are side-effect free and independently testable.
  */
 
-import type {
-  AgentClaim,
-  ClaimType,
-  InvalidationReason,
-} from "./coordination-types.js";
+import type { AgentClaim, ClaimType, InvalidationReason } from "./coordination-types.js";
 
 /**
  * Maps a raw Memgraph row (or the nested `c` property) to an AgentClaim.
  * Returns null if the row lacks a required `id` field.
  */
 export function rowToClaim(row: Record<string, unknown>): AgentClaim | null {
-  const claim =
-    (row.c as Record<string, unknown>) ||
-    (row.claim as Record<string, unknown>) ||
-    row;
+  const claim = (row.c as Record<string, unknown>) || (row.claim as Record<string, unknown>) || row;
 
   if (!claim || typeof claim !== "object" || !claim.id) {
     return null;
@@ -33,9 +26,7 @@ export function rowToClaim(row: Record<string, unknown>): AgentClaim | null {
     targetId: String(claim.targetId ?? ""),
     intent: String(claim.intent ?? ""),
     validFrom: Number(claim.validFrom ?? Date.now()),
-    targetVersionSHA: claim.targetVersionSHA
-      ? String(claim.targetVersionSHA)
-      : undefined,
+    targetVersionSHA: claim.targetVersionSHA ? String(claim.targetVersionSHA) : undefined,
     validTo: claim.validTo == null ? null : Number(claim.validTo),
     invalidationReason: claim.invalidationReason
       ? (String(claim.invalidationReason) as InvalidationReason)

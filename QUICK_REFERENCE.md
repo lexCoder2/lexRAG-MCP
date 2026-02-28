@@ -1,4 +1,4 @@
-# lxRAG MCP — Quick Reference
+# lxDIG MCP — Quick Reference
 
 ## Session Flow (MCP HTTP)
 
@@ -28,7 +28,7 @@ npm run start:http
 curl http://localhost:9000/health
 ```
 
-## 33 MCP Tools
+## 39 MCP Tools
 
 ### Graph / Querying
 
@@ -104,9 +104,25 @@ curl http://localhost:9000/health
 
 ### Utility
 
-| Tool                | Purpose                            |
-| ------------------- | ---------------------------------- |
-| `contract_validate` | Normalize and validate tool inputs |
+| Tool                | Purpose                                     |
+| ------------------- | ------------------------------------------- |
+| `contract_validate` | Normalize and validate tool inputs          |
+| `tools_list`        | List all registered tools with descriptions |
+
+### Setup
+
+| Tool                         | Purpose                                        |
+| ---------------------------- | ---------------------------------------------- |
+| `init_project_setup`         | One-shot workspace init: set context + rebuild |
+| `setup_copilot_instructions` | Generate `.github/copilot-instructions.md`     |
+
+### Docs & Reference
+
+| Tool          | Purpose                                     |
+| ------------- | ------------------------------------------- |
+| `index_docs`  | Index markdown documentation into the graph |
+| `search_docs` | Search indexed docs by text or symbol       |
+| `ref_query`   | Query a reference repository for patterns   |
 
 ## Common Workflows
 
@@ -149,13 +165,13 @@ curl http://localhost:9000/health
 MEMGRAPH_HOST=localhost       # default: localhost
 MEMGRAPH_PORT=7687            # default: 7687
 MCP_PORT=9000                 # default: 9000
-LXRAG_PROJECT_ID=my-repo # optional: default project namespace
-LXRAG_USE_TREE_SITTER=true  # enable AST-accurate parsers (requires optional deps)
+LXDIG_PROJECT_ID=my-repo # optional: default project namespace
+LXDIG_USE_TREE_SITTER=true  # enable AST-accurate parsers (requires optional deps)
 ```
 
 ## Tree-sitter Parsers
 
-When `LXRAG_USE_TREE_SITTER=true`, AST-accurate parsers activate for:
+When `LXDIG_USE_TREE_SITTER=true`, AST-accurate parsers activate for:
 
 | Language   | Extensions            | Fallback       |
 | ---------- | --------------------- | -------------- |
@@ -181,7 +197,7 @@ Grammars are `optionalDependencies` — missing grammars fall back silently.
 | Other language parsers    | `src/parsers/tree-sitter-parser.ts`            |
 | Engines                   | `src/engines/`                                 |
 | Docker stack              | `docker-compose.yml`                           |
-| Runbook                   | `docs/GRAPH_EXPERT_AGENT.md`                   |
+| Runbook                   | `docs/TOOL_PATTERNS.md`                        |
 
 ## Troubleshooting
 

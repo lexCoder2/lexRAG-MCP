@@ -7,6 +7,7 @@ import type { GraphIndexManager } from "../graph/index.js";
 import type QdrantClient from "./qdrant-client.js";
 import type { VectorPoint } from "./qdrant-client.js";
 import { extractProjectIdFromScopedId } from "../utils/validation.js";
+import { logger } from "../utils/logger.js";
 
 export interface CodeEmbedding {
   id: string;
@@ -46,7 +47,7 @@ export class EmbeddingEngine {
     classes: number;
     files: number;
   }> {
-    console.error("[EmbeddingEngine] Starting embedding generation...");
+    logger.error("[EmbeddingEngine] Starting embedding generation...");
 
     let functionCount = 0;
     let classCount = 0;
@@ -55,11 +56,7 @@ export class EmbeddingEngine {
     // Generate embeddings for functions
     const functions = this.index.getNodesByType("FUNCTION");
     for (const func of functions) {
-      const embedding = this.generateEmbedding(
-        "function",
-        func.id,
-        func.properties,
-      );
+      const embedding = this.generateEmbedding("function", func.id, func.properties);
       this.embeddings.set(embedding.id, embedding);
       functionCount++;
     }
@@ -75,19 +72,15 @@ export class EmbeddingEngine {
     // Generate embeddings for files
     const files = this.index.getNodesByType("FILE");
     for (const file of files) {
-      const embedding = this.generateEmbedding(
-        "file",
-        file.id,
-        file.properties,
-      );
+      const embedding = this.generateEmbedding("file", file.id, file.properties);
       this.embeddings.set(embedding.id, embedding);
       fileCount++;
     }
 
-    console.error("[EmbeddingEngine] Generated embeddings:");
-    console.error(`  Functions: ${functionCount}`);
-    console.error(`  Classes: ${classCount}`);
-    console.error(`  Files: ${fileCount}`);
+    logger.error("[EmbeddingEngine] Generated embeddings:");
+    logger.error(`  Functions: ${functionCount}`);
+    logger.error(`  Classes: ${classCount}`);
+    logger.error(`  Files: ${fileCount}`);
 
     return { functions: functionCount, classes: classCount, files: fileCount };
   }
@@ -140,8 +133,7 @@ export class EmbeddingEngine {
     if (props.kind) parts.push(`kind:${props.kind}`);
     if (props.parameters) parts.push(`params:${props.parameters.join(",")}`);
     if (props.extends) parts.push(`extends:${props.extends}`);
-    if (props.implements)
-      parts.push(`implements:${props.implements.join(",")}`);
+    if (props.implements) parts.push(`implements:${props.implements.join(",")}`);
     if (props.path) parts.push(`path:${props.path}`);
 
     return parts.join(" ");
@@ -171,7 +163,7 @@ export class EmbeddingEngine {
    */
   async storeInQdrant(): Promise<void> {
     if (!this.qdrant.isConnected()) {
-      console.warn("[EmbeddingEngine] Qdrant not connected, skipping storage");
+      logger.warn("[EmbeddingEngine] Qdrant not connected, skipping storage");
       return;
     }
 
@@ -213,7 +205,7 @@ export class EmbeddingEngine {
       await this.qdrant.upsertPoints("files", fileEmbeddings);
     }
 
-    console.error("[EmbeddingEngine] Embeddings stored in Qdrant");
+    logger.error("[EmbeddingEngine] Embeddings stored in Qdrant");
   }
 
   /**
@@ -232,11 +224,7 @@ export class EmbeddingEngine {
     const queryVector = this.textToVector(query);
 
     if (this.qdrant.isConnected()) {
-      const results = await this.qdrant.search(
-        `${type}s`,
-        queryVector,
-        limit * 2,
-      );
+      const results = await this.qdrant.search(`${type}s`, queryVector, limit * 2);
       // Only return Qdrant results when it actually has data; otherwise fall
       // through to in-memory cosine similarity (e.g. after a fresh rebuild
       // before Qdrant has been populated).

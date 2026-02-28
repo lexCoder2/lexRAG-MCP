@@ -1,9 +1,5 @@
 import { describe, expect, it } from "vitest";
-import {
-  applyFieldPriority,
-  TOOL_OUTPUT_SCHEMAS,
-  type OutputField,
-} from "../schemas.js";
+import { applyFieldPriority, TOOL_OUTPUT_SCHEMAS, type OutputField } from "../schemas.js";
 
 function tokens(value: unknown): number {
   return Math.ceil(JSON.stringify(value).length / 4);
@@ -13,15 +9,9 @@ describe("response/schemas", () => {
   it("includes expected graph_query schema priorities", () => {
     const schema = TOOL_OUTPUT_SCHEMAS.graph_query;
 
-    expect(schema.find((field) => field.key === "intent")?.priority).toBe(
-      "required",
-    );
-    expect(schema.find((field) => field.key === "projectId")?.priority).toBe(
-      "required",
-    );
-    expect(
-      schema.find((field) => field.key === "workspaceRoot")?.priority,
-    ).toBe("low");
+    expect(schema.find((field) => field.key === "intent")?.priority).toBe("required");
+    expect(schema.find((field) => field.key === "projectId")?.priority).toBe("required");
+    expect(schema.find((field) => field.key === "workspaceRoot")?.priority).toBe("low");
   });
 
   it("returns unchanged data when already within budget", () => {
@@ -56,11 +46,7 @@ describe("response/schemas", () => {
       high: data.high,
     });
 
-    const shaped = applyFieldPriority(
-      data,
-      schema,
-      budgetAfterDroppingLowAndMedium,
-    );
+    const shaped = applyFieldPriority(data, schema, budgetAfterDroppingLowAndMedium);
 
     expect(shaped).toEqual({ required: data.required, high: data.high });
   });

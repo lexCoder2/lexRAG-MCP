@@ -48,9 +48,9 @@ describe("exec-utils", () => {
       throw new Error("stdout maxBuffer length exceeded");
     });
 
-    expect(() =>
-      execWithTimeout("cat big.txt", { maxOutputBytes: 10 }),
-    ).toThrow("Command output exceeded size limit");
+    expect(() => execWithTimeout("cat big.txt", { maxOutputBytes: 10 })).toThrow(
+      "Command output exceeded size limit",
+    );
   });
 
   it("execWithTimeoutSafe returns success tuple on success", () => {

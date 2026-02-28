@@ -57,10 +57,7 @@ export default class CoordinationEngine {
 
     const now = Date.now();
     const claimId = makeClaimId("claim", now);
-    const targetSnapshot = await this.getTargetSnapshot(
-      input.targetId,
-      input.projectId,
-    );
+    const targetSnapshot = await this.getTargetSnapshot(input.targetId, input.projectId);
 
     await this.memgraph.executeCypher(Q.CREATE_CLAIM, {
       id: claimId,
@@ -97,10 +94,7 @@ export default class CoordinationEngine {
    */
   async release(claimId: string, outcome?: string): Promise<ReleaseFeedback> {
     // First check current state so we can give accurate feedback.
-    const checkResult = await this.memgraph.executeCypher(
-      Q.RELEASE_CLAIM_OPEN_CHECK,
-      { claimId },
-    );
+    const checkResult = await this.memgraph.executeCypher(Q.RELEASE_CLAIM_OPEN_CHECK, { claimId });
 
     if (!checkResult.data.length) {
       return { found: false, alreadyClosed: false };
@@ -151,19 +145,14 @@ export default class CoordinationEngine {
   }
 
   async overview(projectId: string): Promise<CoordinationOverview> {
-    const [
-      activeResult,
-      staleResult,
-      conflictsResult,
-      summaryResult,
-      totalResult,
-    ] = await Promise.all([
-      this.memgraph.executeCypher(Q.OVERVIEW_ACTIVE, { projectId }),
-      this.memgraph.executeCypher(Q.OVERVIEW_STALE, { projectId }),
-      this.memgraph.executeCypher(Q.OVERVIEW_CONFLICTS, { projectId }),
-      this.memgraph.executeCypher(Q.OVERVIEW_AGENT_SUMMARY, { projectId }),
-      this.memgraph.executeCypher(Q.OVERVIEW_TOTAL, { projectId }),
-    ]);
+    const [activeResult, staleResult, conflictsResult, summaryResult, totalResult] =
+      await Promise.all([
+        this.memgraph.executeCypher(Q.OVERVIEW_ACTIVE, { projectId }),
+        this.memgraph.executeCypher(Q.OVERVIEW_STALE, { projectId }),
+        this.memgraph.executeCypher(Q.OVERVIEW_CONFLICTS, { projectId }),
+        this.memgraph.executeCypher(Q.OVERVIEW_AGENT_SUMMARY, { projectId }),
+        this.memgraph.executeCypher(Q.OVERVIEW_TOTAL, { projectId }),
+      ]);
 
     return {
       activeClaims: activeResult.data
@@ -205,11 +194,7 @@ export default class CoordinationEngine {
     return Number(staleResult.data?.[0]?.invalidated || 0);
   }
 
-  async onTaskCompleted(
-    taskId: string,
-    agentId: string,
-    projectId: string,
-  ): Promise<void> {
+  async onTaskCompleted(taskId: string, agentId: string, projectId: string): Promise<void> {
     await this.memgraph.executeCypher(Q.ON_TASK_COMPLETED, {
       projectId,
       taskId,
@@ -251,10 +236,7 @@ export default class CoordinationEngine {
 
     const row = result.data[0] || {};
     const sha =
-      row.contentHash ||
-      row.hash ||
-      row.gitCommit ||
-      `vf-${String(row.validFrom || Date.now())}`;
+      row.contentHash || row.hash || row.gitCommit || `vf-${String(row.validFrom || Date.now())}`;
 
     return {
       targetExists: true,

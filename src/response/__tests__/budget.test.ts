@@ -1,10 +1,5 @@
 import { describe, expect, it } from "vitest";
-import {
-  DEFAULT_TOKEN_BUDGETS,
-  estimateTokens,
-  fillSlot,
-  makeBudget,
-} from "../budget.js";
+import { DEFAULT_TOKEN_BUDGETS, estimateTokens, fillSlot, makeBudget } from "../budget.js";
 
 describe("response/budget", () => {
   it("makeBudget returns profile defaults", () => {
