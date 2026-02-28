@@ -8,6 +8,7 @@ import type { GraphIndexManager } from "../graph/index.js";
 import type { MemgraphClient } from "../graph/client.js";
 import type { CypherStatement } from "../graph/types.js";
 import { extractProjectIdFromScopedId } from "../utils/validation.js";
+import { logger } from "../utils/logger.js";
 
 export interface Feature {
   id: string;
@@ -187,9 +188,7 @@ export class ProgressEngine {
     if (!feature) return null;
 
     // Get tasks for this feature
-    const tasks = Array.from(this.tasks.values()).filter(
-      (t) => t.featureId === featureId,
-    );
+    const tasks = Array.from(this.tasks.values()).filter((t) => t.featureId === featureId);
 
     // Get implementing files (linked via IMPLEMENTS relationship in graph)
     const implementingFiles: string[] = [];
@@ -225,26 +224,18 @@ export class ProgressEngine {
 
     // Get test coverage
     const testSuites = this.index.getNodesByType("TEST_SUITE").filter((n) => {
-      const testsRels = this.index
-        .getRelationshipsFrom(n.id)
-        .filter((r) => r.type === "TESTS");
+      const testsRels = this.index.getRelationshipsFrom(n.id).filter((r) => r.type === "TESTS");
       return testsRels.some((r) => {
         const tested = this.index.getNode(r.to);
-        return (
-          tested && implementingFiles.includes(tested.properties.path || "")
-        );
+        return tested && implementingFiles.includes(tested.properties.path || "");
       });
     });
 
     const testCases = this.index.getNodesByType("TEST_CASE").filter((n) => {
-      const testRels = this.index
-        .getRelationshipsFrom(n.id)
-        .filter((r) => r.type === "TESTS");
+      const testRels = this.index.getRelationshipsFrom(n.id).filter((r) => r.type === "TESTS");
       return testRels.some((r) => {
         const tested = this.index.getNode(r.to);
-        return (
-          tested && implementingFiles.includes(tested.properties.path || "")
-        );
+        return tested && implementingFiles.includes(tested.properties.path || "");
       });
     });
 
@@ -253,8 +244,7 @@ export class ProgressEngine {
 
     // Calculate progress
     const completedTasks = tasks.filter((t) => t.status === "completed").length;
-    const progressPercentage =
-      tasks.length > 0 ? (completedTasks / tasks.length) * 100 : 0;
+    const progressPercentage = tasks.length > 0 ? (completedTasks / tasks.length) * 100 : 0;
 
     return {
       feature,
@@ -277,9 +267,7 @@ export class ProgressEngine {
    * Find all blocking issues
    */
   getBlockingIssues(type?: "all" | "critical" | "features" | "tests"): Task[] {
-    const blocked = Array.from(this.tasks.values()).filter(
-      (t) => t.status === "blocked",
-    );
+    const blocked = Array.from(this.tasks.values()).filter((t) => t.status === "blocked");
 
     if (type === "critical") {
       return blocked.filter((t) => t.blockedBy && t.blockedBy.length > 2);
@@ -326,20 +314,17 @@ export class ProgressEngine {
       );
 
       if (result.error) {
-        throw new Error(
-          `[ProgressEngine] Failed to persist feature to Memgraph: ${result.error}`,
-        );
+        throw new Error(`[ProgressEngine] Failed to persist feature to Memgraph: ${result.error}`);
       }
 
       // Only add to in-memory map after successful persistence
       this.features.set(feature.id, feature);
-      console.error(
-        `[Phase2d] Feature ${feature.id} created and persisted to Memgraph`,
-      );
+      logger.error(`[Phase2d] Feature ${feature.id} created and persisted to Memgraph`);
       return feature;
     } catch (err) {
       throw new Error(
         `[ProgressEngine] Failed to create feature: ${err instanceof Error ? err.message : String(err)}`,
+        { cause: err },
       );
     }
   }
@@ -376,18 +361,17 @@ export class ProgressEngine {
       );
 
       if (result.error) {
-        throw new Error(
-          `[ProgressEngine] Failed to persist task to Memgraph: ${result.error}`,
-        );
+        throw new Error(`[ProgressEngine] Failed to persist task to Memgraph: ${result.error}`);
       }
 
       // Only add to in-memory map after successful persistence
       this.tasks.set(task.id, task);
-      console.error(`[Phase2d] Task ${task.id} created and persisted to Memgraph`);
+      logger.error(`[Phase2d] Task ${task.id} created and persisted to Memgraph`);
       return task;
     } catch (err) {
       throw new Error(
         `[ProgressEngine] Failed to create task: ${err instanceof Error ? err.message : String(err)}`,
+        { cause: err },
       );
     }
   }
@@ -395,10 +379,7 @@ export class ProgressEngine {
   /**
    * Persist task update to Memgraph (Phase 5.3)
    */
-  async persistTaskUpdate(
-    taskId: string,
-    updates: Partial<Task>,
-  ): Promise<boolean> {
+  async persistTaskUpdate(taskId: string, updates: Partial<Task>): Promise<boolean> {
     if (!this.memgraph || !this.memgraph.isConnected()) {
       return false;
     }
@@ -422,13 +403,10 @@ export class ProgressEngine {
         },
       };
 
-      const result = await this.memgraph.executeCypher(
-        statement.query,
-        statement.params,
-      );
+      const result = await this.memgraph.executeCypher(statement.query, statement.params);
       return !result.error;
     } catch (error) {
-      console.error("[ProgressEngine] Failed to persist task update:", error);
+      logger.error("[ProgressEngine] Failed to persist task update:", error);
       return false;
     }
   }
@@ -436,10 +414,7 @@ export class ProgressEngine {
   /**
    * Persist feature update to Memgraph (Phase 5.3)
    */
-  async persistFeatureUpdate(
-    featureId: string,
-    updates: Partial<Feature>,
-  ): Promise<boolean> {
+  async persistFeatureUpdate(featureId: string, updates: Partial<Feature>): Promise<boolean> {
     if (!this.memgraph || !this.memgraph.isConnected()) {
       return false;
     }
@@ -463,16 +438,10 @@ export class ProgressEngine {
         },
       };
 
-      const result = await this.memgraph.executeCypher(
-        statement.query,
-        statement.params,
-      );
+      const result = await this.memgraph.executeCypher(statement.query, statement.params);
       return !result.error;
     } catch (error) {
-      console.error(
-        "[ProgressEngine] Failed to persist feature update:",
-        error,
-      );
+      logger.error("[ProgressEngine] Failed to persist feature update:", error);
       return false;
     }
   }
@@ -482,7 +451,7 @@ export class ProgressEngine {
    * Called when project context changes to refresh feature/task data
    */
   reload(index: GraphIndexManager, projectId?: string): void {
-    console.error(`[ProgressEngine] Reloading features and tasks (projectId=${projectId})`);
+    logger.error(`[ProgressEngine] Reloading features and tasks (projectId=${projectId})`);
 
     this.index = index;
     this.features.clear();
@@ -506,7 +475,7 @@ export class ProgressEngine {
 
     const featureCount = this.features.size;
     const taskCount = this.tasks.size;
-    console.error(`[ProgressEngine] Reloaded ${featureCount} features and ${taskCount} tasks`);
+    logger.error(`[ProgressEngine] Reloaded ${featureCount} features and ${taskCount} tasks`);
   }
 
   /**
@@ -523,12 +492,10 @@ export class ProgressEngine {
             (f) => f.status === "completed",
           ).length,
           totalTasks: this.tasks.size,
-          completedTasks: Array.from(this.tasks.values()).filter(
-            (t) => t.status === "completed",
-          ).length,
-          blockedTasks: Array.from(this.tasks.values()).filter(
-            (t) => t.status === "blocked",
-          ).length,
+          completedTasks: Array.from(this.tasks.values()).filter((t) => t.status === "completed")
+            .length,
+          blockedTasks: Array.from(this.tasks.values()).filter((t) => t.status === "blocked")
+            .length,
         },
       },
       null,

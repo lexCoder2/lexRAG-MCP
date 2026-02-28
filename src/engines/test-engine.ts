@@ -6,6 +6,7 @@
 
 import * as path from "path";
 import type { GraphIndexManager } from "../graph/index.js";
+import { logger } from "../utils/logger.js";
 
 export interface TestMetadata {
   path: string;
@@ -56,7 +57,6 @@ export class TestEngine {
       const testPath = suite.properties.path;
       const direct: string[] = [];
       const indirect: string[] = [];
-      let affectedBy: string[] = [];
 
       // Find all test cases in this suite
       const testCases = this.index
@@ -94,16 +94,14 @@ export class TestEngine {
       // Find which source files import this test
       // (for reverse dependency tracking)
       const nodes = this.index.getNodesByType("FILE").filter((n) => {
-        const rels = this.index
-          .getRelationshipsFrom(n.id)
-          .filter((r) => r.type === "IMPORTS");
+        const rels = this.index.getRelationshipsFrom(n.id).filter((r) => r.type === "IMPORTS");
         return rels.some((r) => {
           const imp = this.index.getNode(r.to);
           return imp && imp.properties.source === testPath;
         });
       });
 
-      affectedBy = nodes.map((n) => n.properties.path).filter(Boolean);
+      const affectedBy = nodes.map((n) => n.properties.path).filter(Boolean);
 
       this.dependencyMap[testPath] = {
         directDependencies: Array.from(new Set(direct)),
@@ -123,14 +121,38 @@ export class TestEngine {
   }
 
   /**
-   * Categorize test based on path and patterns
+   * Categorize test based on path and naming conventions.
+   * Handles JS/TS (.integration.test.*), Python (test_*_integration.py,
+   * *_integration_test.py), Go (*_integration_test.go), and Ruby
+   * (integration/..*_spec.rb) conventions.
    */
-  private categorizeTest(
-    testPath: string
-  ): "unit" | "integration" | "performance" | "e2e" {
-    if (testPath.includes(".integration.test.")) return "integration";
-    if (testPath.includes(".performance.test.")) return "performance";
-    if (testPath.includes("/e2e/")) return "e2e";
+  private categorizeTest(testPath: string): "unit" | "integration" | "performance" | "e2e" {
+    const p = testPath.toLowerCase();
+    // Integration: any language
+    if (
+      p.includes(".integration.test.") ||
+      p.includes("_integration_test.") ||
+      p.includes("_integration_spec.") ||
+      p.includes("/integration/") ||
+      p.includes("/integration_") ||
+      p.includes("test_integration_")
+    ) {
+      return "integration";
+    }
+    // Performance: any language
+    if (
+      p.includes(".performance.test.") ||
+      p.includes("_performance_test.") ||
+      p.includes("_bench_test.") ||
+      p.includes("_benchmark") ||
+      p.includes("/benchmarks/")
+    ) {
+      return "performance";
+    }
+    // E2E: any language
+    if (p.includes("/e2e/") || p.includes("/end_to_end/") || p.includes("_e2e_")) {
+      return "e2e";
+    }
     return "unit";
   }
 
@@ -140,7 +162,7 @@ export class TestEngine {
   selectAffectedTests(
     changedFiles: string[],
     includeIntegration = true,
-    depth = 1
+    depth = 1,
   ): TestSelectionResult {
     const selected = new Set<string>();
     const affectedSources = new Set<string>();
@@ -155,8 +177,7 @@ export class TestEngine {
         if (!testMeta) continue;
 
         // Skip non-selected test categories
-        if (!includeIntegration && testMeta.category === "integration")
-          continue;
+        if (!includeIntegration && testMeta.category === "integration") continue;
 
         // Check direct dependencies
         if (deps.directDependencies.includes(changedFile)) {
@@ -166,10 +187,7 @@ export class TestEngine {
         }
 
         // Check indirect dependencies (up to depth)
-        if (
-          depth > 1 &&
-          this.isIndirectlyDependentOn(changedFile, testPath, depth - 1)
-        ) {
+        if (depth > 1 && this.isIndirectlyDependentOn(changedFile, testPath, depth - 1)) {
           selected.add(testPath);
           affectedSources.add(changedFile);
           continue;
@@ -217,7 +235,7 @@ export class TestEngine {
   private isIndirectlyDependentOn(
     changedFile: string,
     testPath: string,
-    remainingDepth: number
+    remainingDepth: number,
   ): boolean {
     const deps = this.dependencyMap[testPath];
     if (!deps) return false;
@@ -242,7 +260,7 @@ export class TestEngine {
   private transitiveImportSearch(
     changedFile: string,
     fromFile: string,
-    remainingDepth: number
+    remainingDepth: number,
   ): boolean {
     // Look for tests that import fromFile and check if they import changedFile
     for (const [testPath, deps] of Object.entries(this.dependencyMap)) {
@@ -296,21 +314,22 @@ export class TestEngine {
   }
 
   /**
-   * Get mirror test path for a source file
+   * Get mirror test path for a source file, preserving the source extension.
+   * e.g. src/utils/units.ts  → src/utils/__tests__/units.test.ts
+   *      src/utils/helpers.py → src/utils/__tests__/helpers.test.py
+   *      lib/foo.rb           → lib/__tests__/foo.test.rb
    */
   private getMirrorTestPath(sourcePath: string): string {
-    // Convert: src/utils/units.ts → src/utils/__tests__/units.test.ts
     const dir = path.dirname(sourcePath);
-    const base = path.basename(sourcePath, path.extname(sourcePath));
-    return `${dir}/__tests__/${base}.test.ts`;
+    const ext = path.extname(sourcePath);
+    const base = path.basename(sourcePath, ext);
+    return `${dir}/__tests__/${base}.test${ext}`;
   }
 
   /**
    * Determine overall test category
    */
-  private determineCategory(
-    testPaths: Set<string>
-  ): "unit" | "integration" | "mixed" {
+  private determineCategory(testPaths: Set<string>): "unit" | "integration" | "mixed" {
     let hasUnit = false;
     let hasIntegration = false;
     let hasPerformance = false;
@@ -326,8 +345,7 @@ export class TestEngine {
 
     if (
       (hasUnit || hasIntegration || hasPerformance) &&
-      (hasUnit ? 1 : 0) + (hasIntegration ? 1 : 0) + (hasPerformance ? 1 : 0) >
-        1
+      (hasUnit ? 1 : 0) + (hasIntegration ? 1 : 0) + (hasPerformance ? 1 : 0) > 1
     ) {
       return "mixed";
     }
@@ -347,7 +365,7 @@ export class TestEngine {
    * Called when project context changes to refresh test data
    */
   reload(index: GraphIndexManager, projectId?: string): void {
-    console.error(`[TestEngine] Reloading tests (projectId=${projectId})`);
+    logger.debug("TestEngine reloading tests", { projectId });
 
     this.index = index;
     this.testMap.clear();
@@ -355,7 +373,7 @@ export class TestEngine {
     this.buildTestDependencies();
 
     const testCount = this.testMap.size;
-    console.error(`[TestEngine] Reloaded ${testCount} test suites`);
+    logger.debug("TestEngine reloaded", { testCount, projectId });
   }
 
   /**
@@ -399,8 +417,7 @@ export class TestEngine {
       integrationTests: integrationCount,
       performanceTests: performanceCount,
       e2eTests: e2eCount,
-      averageDuration:
-        this.testMap.size > 0 ? totalDuration / this.testMap.size : 0,
+      averageDuration: this.testMap.size > 0 ? totalDuration / this.testMap.size : 0,
     };
   }
 }

@@ -9,6 +9,7 @@ import type { QdrantClient, VectorPoint } from "../vector/qdrant-client.js";
 import { DocsBuilder } from "../graph/docs-builder.js";
 import { DocsParser, findMarkdownFiles } from "../parsers/docs-parser.js";
 import type { ParsedDoc } from "../parsers/docs-parser.js";
+import { logger } from "../utils/logger.js";
 
 // ─── Public types ─────────────────────────────────────────────────────────────
 
@@ -138,11 +139,9 @@ export class DocsEngine {
         if (withEmbeddings && this.qdrant?.isConnected()) {
           try {
             await this.embedDoc(doc, projectId);
-            console.error(
-              `[Phase3.2] Generated embeddings for documentation: ${doc.relativePath}`,
-            );
+            logger.error(`[Phase3.2] Generated embeddings for documentation: ${doc.relativePath}`);
           } catch (embeddingError) {
-            console.error(
+            logger.error(
               `[Phase3.2] Failed to embed documentation ${doc.relativePath}:`,
               embeddingError,
             );
@@ -219,16 +218,12 @@ LIMIT ${limit}
     );
 
     if (res.error || !res.data.length) return [];
-    return res.data.map((row: Record<string, unknown>) =>
-      this.rowToResult(row),
-    );
+    return res.data.map((row: Record<string, unknown>) => this.rowToResult(row));
   }
 
   // ── Private helpers ──────────────────────────────────────────────────────────
 
-  private async fetchExistingHashes(
-    projectId: string,
-  ): Promise<Map<string, string>> {
+  private async fetchExistingHashes(projectId: string): Promise<Map<string, string>> {
     const res = await this.memgraph.executeCypher(
       `MATCH (d:DOCUMENT { projectId: $projectId })
        RETURN d.relativePath AS relativePath, d.hash AS hash`,
@@ -240,10 +235,7 @@ LIMIT ${limit}
         relativePath: unknown;
         hash: unknown;
       }>) {
-        if (
-          typeof row.relativePath === "string" &&
-          typeof row.hash === "string"
-        ) {
+        if (typeof row.relativePath === "string" && typeof row.hash === "string") {
           map.set(row.relativePath, row.hash);
         }
       }
@@ -276,9 +268,7 @@ LIMIT ${limit}
         { query, projectId },
       );
       if (res.error || res.data.length === 0) return null;
-      return res.data.map((row: Record<string, unknown>) =>
-        this.rowToResult(row),
-      );
+      return res.data.map((row: Record<string, unknown>) => this.rowToResult(row));
     } catch {
       return null;
     }
@@ -291,8 +281,7 @@ LIMIT ${limit}
   ): Promise<DocsSearchResult[]> {
     // Build a simple WHERE clause that checks heading and content
     const whereClauses = terms.map(
-      (_, i) =>
-        `(toLower(s.heading) CONTAINS $term${i} OR toLower(s.content) CONTAINS $term${i})`,
+      (_, i) => `(toLower(s.heading) CONTAINS $term${i} OR toLower(s.content) CONTAINS $term${i})`,
     );
     const params: Record<string, unknown> = { projectId };
     terms.forEach((t, i) => {
@@ -317,9 +306,7 @@ LIMIT ${limit}
     );
 
     if (res.error || !res.data.length) return [];
-    return res.data.map((row: Record<string, unknown>) =>
-      this.rowToResult(row),
-    );
+    return res.data.map((row: Record<string, unknown>) => this.rowToResult(row));
   }
 
   private rowToResult(row: Record<string, unknown>): DocsSearchResult {

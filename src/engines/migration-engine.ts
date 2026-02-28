@@ -105,9 +105,7 @@ export class MigrationEngine {
   /**
    * Parse markdown into feature/task structure
    */
-  private static parseSections(
-    content: string
-  ): Array<{
+  private static parseSections(content: string): Array<{
     type: "feature" | "task";
     id: string;
     title: string;
@@ -123,20 +121,16 @@ export class MigrationEngine {
     // Simple markdown parser (would be expanded for production)
     const lines = content.split("\n");
     let currentSection: any = null;
-    // @ts-expect-error - currentType used in future parser logic
-    let currentType: "feature" | "task" | null = null;
 
     for (const line of lines) {
       if (line.startsWith("## ")) {
         // Feature section
-        currentType = "feature";
         currentSection = {
           title: line.replace("## ", "").trim(),
           details: {},
         };
       } else if (line.startsWith("### ")) {
         // Task section
-        currentType = "task";
         currentSection = {
           title: line.replace("### ", "").trim(),
           details: {},
@@ -163,10 +157,7 @@ export class MigrationEngine {
    * Generate migration report
    */
   static generateReport(results: MigrationResult[]): string {
-    const totalFeatures = results.reduce(
-      (sum, r) => sum + r.featuresCreated,
-      0
-    );
+    const totalFeatures = results.reduce((sum, r) => sum + r.featuresCreated, 0);
     const totalTasks = results.reduce((sum, r) => sum + r.tasksCreated, 0);
     const totalErrors = results.reduce((sum, r) => sum + r.errors.length, 0);
 
