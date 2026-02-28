@@ -26,7 +26,7 @@ jobs:
 
     strategy:
       matrix:
-        node-version: ["24"]
+        node-version: ["24.14.0"]
 
     steps:
       # ── Checkout ──────────────────────────────────────────────────────────────

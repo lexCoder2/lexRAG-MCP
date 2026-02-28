@@ -25,7 +25,7 @@ These are bugs, active degradations, and hardening gaps identified across audit 
 
 **Source:** Self-audit SX4 (2026-02-24)
 
-`test_run` calls `child_process.exec("npx vitest run ...")` and inherits the server process's `PATH`, which may resolve to the system Node (e.g. v10.19.0) instead of the project's managed Node (nvm/volta/pkgx).
+`test_run` calls `child_process.exec("npx vitest run ...")` and inherits the server process's `PATH`, which may resolve to the system Node (e.g. v10.19.0) instead of the project's managed Node (nvm/volta/pkgx, Node.js v24.14.x).
 
 **Fix:** In `test_run`, resolve the `node` binary to `process.execPath` and derive `npx` from the same directory, instead of relying on inherited `PATH`.
 
