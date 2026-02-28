@@ -1,3 +1,4 @@
+import { logger } from "../utils/logger.js";
 /**
  * Qdrant Vector Store Client
  * Interface to Qdrant for semantic search and embeddings
@@ -41,13 +42,10 @@ export class QdrantClient {
       const response = await fetch(`${this.baseUrl}/`);
       if (response.ok) {
         this.connected = true;
-        console.error("[QdrantClient] Connected successfully");
+        logger.error("[QdrantClient] Connected successfully");
       }
     } catch (error) {
-      console.warn(
-        "[QdrantClient] Connection failed (expected for MVP)",
-        error,
-      );
+      logger.warn("[QdrantClient] Connection failed (expected for MVP)", error);
       this.connected = false;
     }
   }
@@ -57,7 +55,7 @@ export class QdrantClient {
    */
   async createCollection(name: string, vectorSize: number): Promise<void> {
     if (!this.connected) {
-      console.warn("[QdrantClient] Not connected");
+      logger.warn("[QdrantClient] Not connected");
       return;
     }
 
@@ -74,10 +72,10 @@ export class QdrantClient {
       });
 
       if (response.ok) {
-        console.error(`[QdrantClient] Collection '${name}' created`);
+        logger.error(`[QdrantClient] Collection '${name}' created`);
       }
     } catch (error) {
-      console.error(`[QdrantClient] Failed to create collection: ${error}`);
+      logger.error(`[QdrantClient] Failed to create collection: ${error}`);
     }
   }
 
@@ -96,12 +94,9 @@ export class QdrantClient {
   /**
    * Upsert points into collection
    */
-  async upsertPoints(
-    collectionName: string,
-    points: VectorPoint[],
-  ): Promise<void> {
+  async upsertPoints(collectionName: string, points: VectorPoint[]): Promise<void> {
     if (!this.connected) {
-      console.warn("[QdrantClient] Not connected, skipping upsert");
+      logger.warn("[QdrantClient] Not connected, skipping upsert");
       return;
     }
 
@@ -123,46 +118,35 @@ export class QdrantClient {
       );
 
       if (response.ok) {
-        console.error(
-          `[QdrantClient] Upserted ${points.length} points to '${collectionName}'`,
-        );
+        logger.error(`[QdrantClient] Upserted ${points.length} points to '${collectionName}'`);
       } else {
         const text = await response.text().catch(() => "(unreadable)");
-        console.error(
-          `[QdrantClient] Upsert failed (${response.status}): ${text}`,
-        );
+        logger.error(`[QdrantClient] Upsert failed (${response.status}): ${text}`);
       }
     } catch (error) {
-      console.error(`[QdrantClient] Failed to upsert points: ${error}`);
+      logger.error(`[QdrantClient] Failed to upsert points: ${error}`);
     }
   }
 
   /**
    * Search for similar vectors
    */
-  async search(
-    collectionName: string,
-    vector: number[],
-    limit = 10,
-  ): Promise<SearchResult[]> {
+  async search(collectionName: string, vector: number[], limit = 10): Promise<SearchResult[]> {
     if (!this.connected) {
-      console.warn("[QdrantClient] Not connected");
+      logger.warn("[QdrantClient] Not connected");
       return [];
     }
 
     try {
-      const response = await fetch(
-        `${this.baseUrl}/collections/${collectionName}/points/search`,
-        {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            vector,
-            limit,
-            with_payload: true,
-          }),
-        },
-      );
+      const response = await fetch(`${this.baseUrl}/collections/${collectionName}/points/search`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          vector,
+          limit,
+          with_payload: true,
+        }),
+      });
 
       if (response.ok) {
         const data = (await response.json()) as any;
@@ -177,7 +161,7 @@ export class QdrantClient {
       }
       return [];
     } catch (error) {
-      console.error(`[QdrantClient] Search failed: ${error}`);
+      logger.error(`[QdrantClient] Search failed: ${error}`);
       return [];
     }
   }
@@ -190,9 +174,9 @@ export class QdrantClient {
 
     try {
       await fetch(`${this.baseUrl}/collections/${name}`, { method: "DELETE" });
-      console.error(`[QdrantClient] Collection '${name}' deleted`);
+      logger.error(`[QdrantClient] Collection '${name}' deleted`);
     } catch (error) {
-      console.error(`[QdrantClient] Failed to delete collection: ${error}`);
+      logger.error(`[QdrantClient] Failed to delete collection: ${error}`);
     }
   }
 
@@ -213,7 +197,7 @@ export class QdrantClient {
         };
       }
     } catch (error) {
-      console.error(`[QdrantClient] Failed to get collection: ${error}`);
+      logger.error(`[QdrantClient] Failed to get collection: ${error}`);
     }
     return null;
   }

@@ -1,5 +1,5 @@
 export interface ParsedSymbol {
-  type: "function" | "class" | "method" | "variable" | "interface" | "import";
+  type: "function" | "class" | "method" | "variable" | "interface" | "import" | "call";
   name: string;
   startLine: number;
   endLine: number;

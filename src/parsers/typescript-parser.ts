@@ -1,6 +1,7 @@
 import * as fs from "fs";
 import * as path from "path";
 import * as env from "../env.js";
+import { logger } from "../utils/logger.js";
 // import Parser from 'web-tree-sitter'; // Optional dependency
 
 export interface ASTNode {
@@ -111,7 +112,7 @@ export class TypeScriptParser {
   async initialize(): Promise<void> {
     // Tree-sitter initialization removed for MVP
     // Will be added back when web-tree-sitter is properly configured
-    console.error("TypeScriptParser initialized with regex fallback");
+    logger.error("TypeScriptParser initialized with regex fallback");
   }
 
   parseFile(filePath: string, options?: ParseFileOptions): ParsedFile {
@@ -238,9 +239,7 @@ export class TypeScriptParser {
       }
 
       const interfaceMatch =
-        /^\s*(?:export\s+)?interface\s+(\w+)(?:\s+(?:extends)\s+(.+?))?(?:\s*{|$)/.exec(
-          line,
-        );
+        /^\s*(?:export\s+)?interface\s+(\w+)(?:\s+(?:extends)\s+(.+?))?(?:\s*{|$)/.exec(line);
       if (interfaceMatch) {
         classes.push({
           id: `${path.basename(filePath)}:${interfaceMatch[1]}`,
@@ -276,20 +275,13 @@ export class TypeScriptParser {
     const lines = content.split("\n");
 
     lines.forEach((line, index) => {
-      const match =
-        /^\s*(?:export\s+)?(?:const|let|var)\s+(\w+)\s*(?::\s*(.+?))?\s*=/.exec(
-          line,
-        );
+      const match = /^\s*(?:export\s+)?(?:const|let|var)\s+(\w+)\s*(?::\s*(.+?))?\s*=/.exec(line);
       if (match && !line.includes("(")) {
         // Don't match function declarations
         variables.push({
           id: `${path.basename(filePath)}:${match[1]}`,
           name: match[1],
-          kind: line.includes("const")
-            ? "const"
-            : line.includes("let")
-              ? "let"
-              : "var",
+          kind: line.includes("const") ? "const" : line.includes("let") ? "let" : "var",
           startLine: index + 1,
           endLine: index + 1,
           isExported: line.includes("export"),
@@ -316,9 +308,7 @@ export class TypeScriptParser {
         const defaultImport = match[2] || (match[3] ? match[3] : "");
 
         const specifiers = [
-          ...(defaultImport
-            ? [{ name: defaultImport, imported: "default", isDefault: true }]
-            : []),
+          ...(defaultImport ? [{ name: defaultImport, imported: "default", isDefault: true }] : []),
           ...specifierStr
             .split(",")
             .map((s) => s.trim())
@@ -360,8 +350,7 @@ export class TypeScriptParser {
       }
 
       // named exports
-      const namedMatch =
-        /^export\s+(?:const|function|class|interface|type)\s+(\w+)/.exec(line);
+      const namedMatch = /^export\s+(?:const|function|class|interface|type)\s+(\w+)/.exec(line);
       if (namedMatch) {
         exports.push({
           id: `${path.basename(filePath)}:export:${namedMatch[1]}`,
@@ -372,12 +361,9 @@ export class TypeScriptParser {
       }
 
       // export from
-      const reexportMatch =
-        /^export\s+(?:{([^}]+)}|\*)\s+from\s+['"]([^'"]+)['"]/.exec(line);
+      const reexportMatch = /^export\s+(?:{([^}]+)}|\*)\s+from\s+['"]([^'"]+)['"]/.exec(line);
       if (reexportMatch) {
-        const items = reexportMatch[1]?.split(",").map((s) => s.trim()) || [
-          "*",
-        ];
+        const items = reexportMatch[1]?.split(",").map((s) => s.trim()) || ["*"];
         items.forEach((item) => {
           exports.push({
             id: `${path.basename(filePath)}:export:${item}`,
@@ -415,32 +401,21 @@ export class TypeScriptParser {
     return lines.length;
   }
 
-  private extractTestSuites(
-    content: string,
-    filePath: string,
-  ): TestSuiteNode[] {
+  private extractTestSuites(content: string, filePath: string): TestSuiteNode[] {
     const testSuites: TestSuiteNode[] = [];
     const lines = content.split("\n");
 
     lines.forEach((line, index) => {
-      let match;
       // Match: describe|test|it( "name" or 'name' or `name`
-      const regex = new RegExp(
-        /^\s*(describe|test|it)\s*\(\s*['"`]([^'"`]+)['"`]/,
-      );
-      match = regex.exec(line);
+      const regex = new RegExp(/^\s*(describe|test|it)\s*\(\s*['"`]([^'"`]+)['"`]/);
+      const match = regex.exec(line);
 
       if (match) {
         const type = match[1] as "describe" | "test" | "it";
         const name = match[2];
 
         // Determine category based on file path
-        let category:
-          | "unit"
-          | "integration"
-          | "performance"
-          | "e2e"
-          | undefined = undefined;
+        let category: "unit" | "integration" | "performance" | "e2e" | undefined = undefined;
         if (filePath.includes(".integration.test.")) {
           category = "integration";
         } else if (filePath.includes(".performance.test.")) {
@@ -476,9 +451,7 @@ export class TypeScriptParser {
     // Match individual it() or test() blocks (inside describe blocks)
     lines.forEach((line, index) => {
       // Match: it|test( "name" or 'name' or `name`
-      const regex = new RegExp(
-        /^\s*(it|test)\s*\(\s*['"`]([^'"`]+)['"`]/,
-      );
+      const regex = new RegExp(/^\s*(it|test)\s*\(\s*['"`]([^'"`]+)['"`]/);
       const match = regex.exec(line);
 
       if (match) {
@@ -487,9 +460,7 @@ export class TypeScriptParser {
         // Find the nearest describe block above this test
         let parentSuiteId: string | undefined;
         for (let i = index - 1; i >= 0; i--) {
-          const describeMatch = /^\s*describe\s*\(\s*['"`]([^'"`]+)['"`]/.exec(
-            lines[i],
-          );
+          const describeMatch = /^\s*describe\s*\(\s*['"`]([^'"`]+)['"`]/.exec(lines[i]);
           if (describeMatch) {
             parentSuiteId = `${path.basename(filePath)}:describe:${i}:${describeMatch[1]}`;
             break;

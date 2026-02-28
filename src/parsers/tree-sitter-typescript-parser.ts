@@ -23,11 +23,7 @@
 
 import { createRequire } from "module";
 import * as path from "path";
-import type {
-  LanguageParser,
-  ParseResult,
-  ParsedSymbol,
-} from "./parser-interface.js";
+import type { LanguageParser, ParseResult, ParsedSymbol } from "./parser-interface.js";
 
 const _require = createRequire(import.meta.url);
 
@@ -128,10 +124,7 @@ function extractSymbols(root: TSNode): ParsedSymbol[] {
         symbols.push({
           type: "function",
           name: nameNode.text,
-          kind:
-            node.type === "generator_function_declaration"
-              ? "generator"
-              : undefined,
+          kind: node.type === "generator_function_declaration" ? "generator" : undefined,
           startLine: node.startPosition.row + 1,
           endLine: node.endPosition.row + 1,
           scopePath: scope[scope.length - 1],
@@ -194,8 +187,7 @@ function extractSymbols(root: TSNode): ParsedSymbol[] {
         symbols.push({
           type: "class",
           name: nameNode.text,
-          kind:
-            node.type === "abstract_class_declaration" ? "abstract" : "class",
+          kind: node.type === "abstract_class_declaration" ? "abstract" : "class",
           startLine: node.startPosition.row + 1,
           endLine: node.endPosition.row + 1,
         });
@@ -256,6 +248,27 @@ function extractSymbols(root: TSNode): ParsedSymbol[] {
           startLine: node.startPosition.row + 1,
           endLine: node.endPosition.row + 1,
           imports: [moduleSpec],
+        });
+        break;
+      }
+
+      // ── Call expressions ─────────────────────────────────────────────────
+      case "call_expression": {
+        const fnNode = node.childForFieldName("function");
+        if (!fnNode) break;
+        let callee = "";
+        if (fnNode.type === "identifier") {
+          callee = fnNode.text;
+        } else if (fnNode.type === "member_expression") {
+          callee = fnNode.text; // e.g. "this.cache.hasChanged"
+        }
+        if (!callee) break;
+        symbols.push({
+          type: "call",
+          name: callee,
+          startLine: node.startPosition.row + 1,
+          endLine: node.endPosition.row + 1,
+          scopePath: scope[scope.length - 1],
         });
         break;
       }

@@ -13,11 +13,7 @@
 
 import { createRequire } from "module";
 import * as path from "path";
-import type {
-  LanguageParser,
-  ParseResult,
-  ParsedSymbol,
-} from "./parser-interface.js";
+import type { LanguageParser, ParseResult, ParsedSymbol } from "./parser-interface.js";
 
 const _require = createRequire(import.meta.url);
 
@@ -39,8 +35,7 @@ function tryRequire(name: string): unknown {
  */
 function resolveLanguage(mod: unknown): unknown {
   if (!mod) return null;
-  if (typeof (mod as any).language !== "undefined")
-    return (mod as any).language;
+  if (typeof (mod as any).language !== "undefined") return (mod as any).language;
   return mod;
 }
 
@@ -143,10 +138,7 @@ abstract class TreeSitterParser implements LanguageParser {
     }
   }
 
-  protected abstract extractSymbols(
-    root: TSNode,
-    source: string,
-  ): ParsedSymbol[];
+  protected abstract extractSymbols(root: TSNode, source: string): ParsedSymbol[];
 
   /** Helper: find all descendants matching a set of node types. */
   protected findAll(root: TSNode, types: Set<string>): TSNode[] {
@@ -197,15 +189,9 @@ export class TreeSitterPythonParser extends TreeSitterParser {
         case "import_statement": {
           // import foo, bar
           walk(node, (child) => {
-            if (
-              child.type === "dotted_name" ||
-              child.type === "aliased_import"
-            ) {
+            if (child.type === "dotted_name" || child.type === "aliased_import") {
               const name = child.childForFieldName("name")?.text ?? child.text;
-              if (
-                name &&
-                !symbols.some((s) => s.name === name && s.type === "import")
-              ) {
+              if (name && !symbols.some((s) => s.name === name && s.type === "import")) {
                 symbols.push({
                   type: "import",
                   name,

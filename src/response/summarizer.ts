@@ -73,10 +73,7 @@ export default class CodeSummarizer {
           typeof obj.data === "object" &&
           typeof (obj.data as Record<string, unknown>).summary === "string"
         ) {
-          return String((obj.data as Record<string, unknown>).summary).slice(
-            0,
-            400,
-          );
+          return String((obj.data as Record<string, unknown>).summary).slice(0, 400);
         }
       }
 
