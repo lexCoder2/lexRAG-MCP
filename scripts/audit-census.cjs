@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 /**
  * Audit census script: collects node/relationship/structure data
- * for the lxDIG-MCP self-audit.
+ * for the lxDIG MCP self-audit.
  */
 
 const neo4j = require("neo4j-driver");
@@ -72,7 +72,7 @@ async function run() {
 
     // 5. SECTION total
     await q(
-      "SECTION total lxDIG-MCP",
+      "SECTION total lxDIG MCP",
       `
       MATCH (s:Section) WHERE s.projectId = 'lxDIG-MCP'
       RETURN count(s) AS total
@@ -81,7 +81,7 @@ async function run() {
 
     // 6. FILE nodes (check for duplicate / relative paths)
     await q(
-      "FILE sample lxDIG-MCP",
+      "FILE sample lxDIG MCP",
       `
       MATCH (f:File) WHERE f.projectId = 'lxDIG-MCP'
       RETURN f.path AS path

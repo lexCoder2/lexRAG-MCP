@@ -1,8 +1,8 @@
-# lxDIG-MCP Self-Audit Report
+# lxDIG MCP Self-Audit Report
 
 **Run date:** 2026-02-24  
-**Audited project:** `lxDIG-MCP` (`/home/alex_rod/projects/lexRAG-MCP`)  
-**Auditor:** lxDIG-MCP server running against its own source tree  
+**Audited project:** `lxDIG MCP` (`/home/alex_rod/projects/lexRAG-MCP`)  
+**Auditor:** lxDIG MCP server running against its own source tree  
 **Prior audit:** `lxdig-tool-audit-2026-02-23b.md` (code-visual workspace)
 
 ---
@@ -173,7 +173,7 @@ CLASS and FUNCTION nodes in the builder. Addressed indirectly by SX5's fix.
 
 **Observed:**
 
-- 0 REFERENCES edges for lxDIG-MCP (vs 36 for lexRAG-visual)
+- 0 REFERENCES edges for lxDIG MCP (vs 36 for lexRAG-visual)
 - 89 relative imports, 0 resolved
 - Import sources use `.js` extension: `"../config.js"`, `"../engines/architecture-engine.js"`
 - FILE nodes use `.ts` extension: `lxDIG-MCP:file:src/config.ts`
@@ -305,7 +305,7 @@ once features are registered under the project.
 ```
 
 **Root cause:**  
-Only 1 EPISODE node exists for lxDIG-MCP. Insufficient episode history to synthesize
+Only 1 EPISODE node exists for lxDIG MCP. Insufficient episode history to synthesize
 patterns. The memory/episode system requires accumulated usage to produce learnings.
 
 **Impact:** Low — expected for a new project / fresh session.

@@ -55,7 +55,7 @@ async function run() {
     `,
     );
 
-    // IMPORTS in lxDIG-MCP that have a REFERENCES rel
+    // IMPORTS in lxDIG MCP that have a REFERENCES rel
     await q(
       "IMPORTs with REFERENCES",
       `

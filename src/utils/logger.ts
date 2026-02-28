@@ -1,5 +1,5 @@
 /**
- * Lightweight structured logger for lxDIG-MCP.
+ * Lightweight structured logger for lxDIG MCP.
  *
  * Design constraints:
  *   - MCP servers use stdio transport — stdout is protocol data.

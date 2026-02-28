@@ -1,4 +1,4 @@
-# Copilot Instructions for lxDIG-MCP
+# Copilot Instructions for lxDIG MCP
 
 Dynamic Intelligence Graph (DIG) MCP server for code graph intelligence, agent memory, and multi-agent coordination — beyond RAG and GraphRAG — for VS Code Copilot, Claude Code, Claude Desktop, and Cursor.
 

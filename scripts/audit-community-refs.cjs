@@ -48,7 +48,7 @@ async function run() {
     `,
     );
 
-    // REFERENCES: why they don't exist for lxDIG-MCP
+    // REFERENCES: why they don't exist for lxDIG MCP
     // Check if IMPORTs have 'source' ending in .js
     await q(
       "IMPORT source extensions breakdown",

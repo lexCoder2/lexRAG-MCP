@@ -74,6 +74,6 @@ jobs:
         if: github.event_name == 'pull_request'
         uses: davelosert/vitest-coverage-report-action@v2
         with:
-          name: "lxDIG-MCP"
+          name: "lxDIG MCP"
           json-summary-compare-path: coverage/coverage-summary.json
         continue-on-error: true

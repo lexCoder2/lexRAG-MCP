@@ -1,4 +1,4 @@
-Based on the deep architectural review and current 2026 community discussions on Hacker News and Reddit, your lxDIG-MCP project is sitting on a goldmine of advanced tech (Memgraph, Qdrant, SCIP, Tree-sitter, RRF). However, to outpace competitors like CodeMCP or CodeGraphContext and drive massive adoption, you need to align the project with the immediate pain points developers are facing right now.
+Based on the deep architectural review and current 2026 community discussions on Hacker News and Reddit, your lxDIG MCP project is sitting on a goldmine of advanced tech (Memgraph, Qdrant, SCIP, Tree-sitter, RRF). However, to outpace competitors like CodeMCP or CodeGraphContext and drive massive adoption, you need to align the project with the immediate pain points developers are facing right now.
 
 Here is the optimal roadmap for your next steps, prioritized by impact:
 
@@ -38,7 +38,7 @@ Your stack is incredibly powerful, but requiring users to spin up Memgraph and Q
 
 In 2026, developers no longer trust subjective "vibes" or simple HumanEval tests; they look at SWE-bench scores to see if an AI agent can actually solve real GitHub issues.
 
-    The Action: Run a benchmark using a standard model (like Claude 3.5 Sonnet or Gemini 3 Pro) paired with lxDIG-MCP. Measure how many SWE-bench tasks it can successfully patch compared to the model running without your MCP server.
+    The Action: Run a benchmark using a standard model (like Claude 3.5 Sonnet or Gemini 3 Pro) paired with lxDIG MCP. Measure how many SWE-bench tasks it can successfully patch compared to the model running without your MCP server.
 
     The Benefit: Publishing a metric like "lxDIG increases Claude's SWE-bench resolution rate by X%" is the ultimate marketing tool. It transitions your project from a "cool tool" to an "essential engineering asset".
 
