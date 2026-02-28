@@ -23,7 +23,7 @@
     "benchmark:check-regression": "python3 scripts/check_benchmark_regression.py"
   },
   "engines": {
-    "node": ">=24"
+    "node": "24.14.x"
   },
   "keywords": [
     "mcp",
